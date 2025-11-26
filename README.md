@@ -1,6 +1,6 @@
 # 🎓 Dig Or Exma – Team 23
 
-**Fortgeschrittene Programmierung – HS Flensburg (Wintersemester 2025)**  
+**Fortgeschrittene Programmierung – HAW-Kiel (Wintersemester 2025)**  
 Projektarbeit von **Team 23**  
 👨‍💻 Luca Siemsen (939491) · Aaron Lehrke (937367) · Corinna Filipp (946691) · Dimitri Homutov (935939)
 
