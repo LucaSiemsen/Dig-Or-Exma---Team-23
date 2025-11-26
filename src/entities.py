@@ -8,8 +8,8 @@ from typing import Optional, TYPE_CHECKING
 import pygame
 
 if TYPE_CHECKING:
-    from level import Level
-    from enemy import ProfessorEnemy #Hier den Prof importieren.
+    from src.level import Level
+    from src.enemy import ProfessorEnemy #Hier den Prof importieren.
 
 
 class Student:

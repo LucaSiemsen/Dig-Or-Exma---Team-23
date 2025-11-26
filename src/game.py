@@ -11,7 +11,7 @@ import pygame
 # falls sie noch nicht existieren, nehmen wir Default-Werte
 
 try:
-    from config import (
+    from src.config import (
         GRID_COLS,
         GRID_ROWS,
         GRID_MARGIN_X_TILES,
@@ -27,7 +27,7 @@ except ImportError:
     REQUIRED_ECTS = 5
 
 try:
-    from graphics import Sprite
+    from src.graphics import Sprite
 except ImportError:
     # einfache Platzhalter-Klasse, falls graphics.py noch fehlt
     class Sprite:
@@ -38,8 +38,8 @@ except ImportError:
         def draw(self, screen: pygame.Surface, x: int, y: int):
             screen.blit(self.surface, (x, y))
 
-from entities import Student
-from level import Level
+from src.entities import Student
+from src.level import Level
 
 
 

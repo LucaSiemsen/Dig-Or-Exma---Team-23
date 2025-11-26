@@ -14,7 +14,7 @@ from typing import Optional
 import pygame
 
 try:
-    from config import (
+    from src.config import (
         GRID_COLS,
         GRID_ROWS,
         GRID_MARGIN_X_TILES,
@@ -36,7 +36,7 @@ except ImportError:
     PROFESSORS = []
 
 try:
-    from graphics import Sprite
+    from src.graphics import Sprite
 except ImportError:
     # einfacher Platzhalter, falls graphics.py noch nicht existiert
     class Sprite:
@@ -50,7 +50,7 @@ except ImportError:
 
 # ProfessorEnemy absichern
 try:
-    from enemy import ProfessorEnemy
+    from src.enemy import ProfessorEnemy
 except ImportError:
     # einfacher Platzhalter, falls enemy.py noch fehlt
     class ProfessorEnemy:
@@ -100,7 +100,7 @@ except ImportError:
 
 # ProfessorEnemy absichern
 try:
-    from enemy import ProfessorEnemy
+    from src.enemy import ProfessorEnemy
 except ImportError:
     # einfacher Platzhalter, falls enemy.py noch fehlt
     class ProfessorEnemy:
