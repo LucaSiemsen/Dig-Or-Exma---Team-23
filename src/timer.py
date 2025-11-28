@@ -17,5 +17,6 @@ class BafoegTimer:
         #0.0 ist die Zeit, die minimal verbleiben kann (Timer läuft nicht ins Negative)
 
     #Überprüfung, ob die Zeit abgelaufen ist
+    @property
     def is_over(self) -> bool:
         return self.time_left <= 0.0

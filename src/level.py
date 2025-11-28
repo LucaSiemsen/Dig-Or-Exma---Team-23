@@ -24,6 +24,7 @@ try:
         QUESTIONS_BY_PROF,
         PROFESSORS,
     )
+    from .timer import BafoegTimer
 except ImportError:
     # Fallback, falls config.py noch nicht existiert
     GRID_COLS = 12
@@ -81,10 +82,6 @@ except ImportError:
                 explanation = "Hier kommen später echte Fragen hin."
             return DummyQuestion()
 
-# Timer absichern
-try:
-    from timer import BafoegTimer
-except ImportError:
     class BafoegTimer:
         def __init__(self, start_time: float):
             self.time_left = start_time
