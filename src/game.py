@@ -6,7 +6,8 @@ from __future__ import annotations
 import sys
 from enum import Enum, auto
 import pygame
-
+from .sound import SoundManager
+from .HUD import Mutebutton
 # versuchen spätere Team-Module zu laden
 # falls sie noch nicht existieren, nehmen wir Default-Werte
 
@@ -90,6 +91,17 @@ class Game:
             "assets/block_empty.png", self.tile_size, self.tile_size
             )
 
+        #Sound-Manager für Musik und Soundeffekte
+        self.sound_manager = SoundManager()
+        self.sound_manager.start_music()
+        
+        
+        #Stummschalt-Button anlegen
+        button_size = 50
+        padding = 30
+        x = self.width - button_size - padding
+        y = self.height - button_size - padding
+        self.mute_button = Mutebutton(x, y, button_size, self.sound_manager)
 
         # Student-Sprite (hier aktuell nur testweise geladen)
         try:
@@ -208,6 +220,7 @@ class Game:
                 prof = self.student.move(dx, dy, self.level)
                 if prof is not None:
                     self.open_question(prof)
+                    self.sound_manager.play_hitsound()
 
         elif self.state == GameState.QUESTION:
             # Frage beantworten mit 1/2/3
