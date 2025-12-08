@@ -76,20 +76,18 @@ class Game:
 
        # Hintergrund laden, falls vorhanden
         try:
-            bg = pygame.image.load("assets/background.png").convert()
+            bg = pygame.image.load("assets/sprites/background.png").convert()
             self.background = pygame.transform.scale(bg, (self.width, self.height))
         except:
             # falls kein Bild existiert, einfach Hintergrundfarbe
             self.background = pygame.Surface((self.width, self.height))
             self.background.fill((20, 20, 30))
-
-
-            self.block_solid = Sprite(
-            "assets/block_solid.png", self.tile_size, self.tile_size
-            )
-            self.block_empty = Sprite(
-            "assets/block_empty.png", self.tile_size, self.tile_size
-            )
+        self.block_solid = Sprite(
+            "assets/sprites/buchblock1.png", self.tile_size, self.tile_size
+        )
+        self.block_empty = Sprite(
+            "assets/sprites/leerer_block.png", self.tile_size, self.tile_size
+        )
 
         #Sound-Manager für Musik und Soundeffekte
         self.sound_manager = SoundManager()
