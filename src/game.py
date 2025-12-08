@@ -6,6 +6,8 @@ from __future__ import annotations
 import sys
 from enum import Enum, auto
 import pygame
+
+from .pausemenu import PauseMenu
 from .sound import SoundManager
 from .HUD import Mutebutton
 # versuchen spätere Team-Module zu laden
@@ -43,7 +45,6 @@ from src.entities import Student
 from src.level import Level
 
 
-
 class GameState(Enum):
     # einfache State-Maschine für das Spiel
     MENU = auto()
@@ -51,6 +52,7 @@ class GameState(Enum):
     QUESTION = auto()
     GAME_OVER = auto()
     LEVEL_COMPLETE = auto()
+    PAUSED = auto()
 
 
 class Game:
@@ -130,6 +132,9 @@ class Game:
 
         # Level + Student anlegen
         self._create_level_and_student()
+        
+        # Pause-Menü
+        self.pause_menu = PauseMenu(self.width, self.height, self.font_title, self.font_small, self.sound_manager)
 
     def _create_level_and_student(self) -> None:
         # neues Level erzeugen
@@ -170,6 +175,8 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     self.handle_key(event.key)
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    self.handle_mouse_click(event.pos)
 
             # nur updaten, wenn Spiel wirklich läuft
             if self.state == GameState.RUNNING and self.level is not None:
@@ -188,6 +195,22 @@ class Game:
 
     def handle_key(self, key: int) -> None:
         # Steuerung je nach aktuellem GameState
+
+        # --- SHIFT toggelt Pause/Weiter ---
+        if key in (pygame.K_LSHIFT, pygame.K_RSHIFT):
+            if self.state == GameState.RUNNING:
+                self.state = GameState.PAUSED
+            elif self.state == GameState.PAUSED:
+                self.state = GameState.RUNNING
+            return
+
+        # --- Wenn pausiert, nur wenige Tasten erlauben ---
+        if self.state == GameState.PAUSED:
+            if key == pygame.K_r:
+                self.restart()
+            elif key == pygame.K_ESCAPE:
+                self.state = GameState.MENU
+            return
 
         if self.state == GameState.MENU:
             # im Menü: Space oder Enter startet das Spiel
@@ -232,6 +255,20 @@ class Game:
                 self.restart()
             elif key in (pygame.K_SPACE, pygame.K_RETURN):
                 self.state = GameState.MENU
+    
+    def handle_mouse_click(self, pos):
+        self.mute_button.handle_click(pos)
+
+        # Pause-Menü Interaktion
+        if self.state == GameState.PAUSED:
+            action = self.pause_menu.handle_click(pos)
+
+            if action == "resume":
+                self.state = GameState.RUNNING
+
+            elif action == "menu":
+                self.state = GameState.MENU
+                self._create_level_and_student()
 
     def open_question(self, prof) -> None:
         # holt die passende Frage vom Level und zeigt den Fragen-State an
@@ -244,6 +281,7 @@ class Game:
         self.active_question = question
         self.state = GameState.QUESTION
         self.last_question_feedback = None
+        self.sound_manager.pause_music() #Hintergrundmusik pausieren wenn Frage kommt
 
     def resolve_question(self, given_index: int) -> None:
         # prüft die Antwort und passt ECTS / Zeit an
@@ -272,6 +310,8 @@ class Game:
 
         self.active_prof = None
         self.active_question = None
+        self.sound_manager.stop_hitsound()
+        self.sound_manager.unpause_music() #Hintergrundmusik fortsetzen
 
         # checken, ob jetzt genug ECTS da sind
         if self.level.collected_ects >= REQUIRED_ECTS and not self.level.is_game_over:
@@ -286,6 +326,9 @@ class Game:
 
         if self.state == GameState.MENU:
             self.draw_menu()
+        elif self.state == GameState.PAUSED:
+             self.draw_game()
+             self.pause_menu.draw(self.screen)
         else:
             assert self.level is not None and self.student is not None
             self.draw_game()
@@ -373,10 +416,10 @@ class Game:
         self.screen.blit(hud, (20, 20))
 
         controls = self.font_small.render(
-            "Pfeiltasten: bewegen/graben   |   R: Neustart   |   ESC: Beenden",
+            "Pfeiltasten: bewegen/graben   |   SHIFT: Pause-Menü   |   R: Neustart   |   ESC: Beenden",
             True,
             (255, 255, 255),
-        )
+            )
         self.screen.blit(controls, (20, 50))
 
         if self.last_question_feedback:

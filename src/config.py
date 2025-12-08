@@ -21,6 +21,7 @@ BAFOEG_TIME_SECONDS = 60.0
 #Wie viele ECTS brauche ich, um das Level zu bestehen?
 REQUIRED_ECTS = 5
 
+WHITE = (255, 255, 255)
 
 
 

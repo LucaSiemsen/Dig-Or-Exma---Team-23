@@ -49,6 +49,21 @@ class SoundManager:
     def toggle_mute(self) -> None:
         self.is_muted = not self.is_muted
         self._apply_volumes()
+    
+    #Pausiert die Hintergrundmusik
+    def pause_music(self) -> None:
+        pg.mixer.music.pause()
+    #Setzt die Hintergrundmusik fort
+    def unpause_music(self) -> None:
+        pg.mixer.music.unpause()
+    
+    def stop_hitsound(self) -> None:
+        self.hit_sound.stop()  # stoppt alle laufenden Instanzen dieses Sounds
+
+    
+        # Methode für den Slider, um die aktuelle Musiklautstärke zu bekommen
+    def get_music_volume(self) -> float:
+        return float(self.base_vol_music)
         
         
 

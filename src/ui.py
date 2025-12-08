@@ -59,3 +59,85 @@ class QuestionUI:
             color = (255,200,50) if i == self.selected else WHITE
             line = self.font_small.render(ans, True, color)
             surf.blit(line, line.get_rect(center=(cx, 300 + i*40)))
+
+
+class VolumeSlider:
+    def __init__(self, x, y, width, height, sound_manager, font):
+        self.rect = pygame.Rect(x, y, width, height) #rahmen für den Slider
+        self.sound_manager = sound_manager #Soundmanager Referenz
+        self.font = font #Schriftart für Texte
+
+        self.num_blocks = 10 #Legt fest, dass der Slider aus 10 Blöcken besteht (visuelle Segmente).
+        self.gap = 4 #Abstand in Pixeln zwischen Blocks.
+
+        # Farben
+        self.col_empty = (80, 80, 80) 
+        self.col_fill  = (100, 200, 100) 
+        self.col_text  = (200, 200, 200) 
+        self.col_hover = (255, 255, 255) 
+
+        #Texte
+        self.title = "Musik-Lautstärke" 
+        self.button_minus = "[-]"
+        self.button_plus  = "[+]"
+
+        self.title_label = self.font.render(self.title, True, (220, 220, 220)) #hier sagen wir mit welchen Werten der Titel gerendert werden soll (aufgemalt)
+
+        #Button Hitboxen erstellen (für Klick-Erkennung)
+        #Minus Button (Links)
+        minus_surface = self.font.render(self.button_minus, True, self.col_text) #wir machen aus dem Text ein Surface (bild)
+        minus_rect = minus_surface.get_rect() #get rect baut mir ein Rechteck um das Surface (Bild)
+        minus_rect.midright = (self.rect.left - 15, self.rect.centery)
+        self.rect_minus = minus_rect.inflate(10, 10) #macht das Rect größer, damit es leichter anklickbar ist.
+        
+        # Plus Button (Rechts)
+        plus_surface = self.font.render(self.button_plus, True, self.col_text) #wir machen aus dem Text ein Surface (bild)
+        plus_rect = plus_surface.get_rect() #get rect baut mir ein Rechteck um das Surface (Bild)
+        plus_rect.midleft = (self.rect.right + 15, self.rect.centery)
+        self.rect_plus = plus_rect.inflate(10, 10)
+
+        #Hier wird ausgerechnet, wie breit jeder einzelne Block in deinem Slider sein muss, damit 10 Blöcke plus die Zwischenräume in die Gesamtbreite passen.
+        total_gap = (self.num_blocks - 1) * self.gap
+        self.block_width = (self.rect.width - total_gap) // self.num_blocks
+
+    def _draw_button(self, screen, rect, text):
+        mouse_pos = pygame.mouse.get_pos() #aktuelle Mausposition abfragen
+        col = self.col_hover if rect.collidepoint(mouse_pos) else self.col_text #prüft ob die Maus über dem Button ist und passt Farbe an
+        surf = self.font.render(text, True, col) #unseren Text zeichnen
+        screen.blit(surf, surf.get_rect(center=rect.center)) #zeichnet den Text zentriert im Button-Rechteck
+
+    def draw(self, screen):
+        # Titel darstellen
+        # zentrieren des Titels über dem Slider-Rechteck
+        title_rect = self.title_label.get_rect(center=(self.rect.centerx, self.rect.top - 25))
+        screen.blit(self.title_label, title_rect)
+
+        # Buttons
+        self._draw_button(screen, self.rect_minus, self.button_minus)
+        self._draw_button(screen, self.rect_plus, self.button_plus)
+        # Blöcke
+        vol = self.sound_manager.get_music_volume()  # 0..1
+        filled = int(round(vol * self.num_blocks)) #für die Anzahl der gefüllten Blöcke
+
+        #jeden Block zeichnen
+        for i in range(self.num_blocks):
+            bx = self.rect.x + i * (self.block_width + self.gap)
+            block_rect = pygame.Rect(bx, self.rect.y, self.block_width, self.rect.height)
+            col = self.col_fill if i < filled else self.col_empty
+            pygame.draw.rect(screen, col, block_rect, border_radius=2)
+
+    def handle_click(self, pos):
+        vol = self.sound_manager.get_music_volume()
+        step = 1.0 / self.num_blocks
+
+        if self.rect_minus.collidepoint(pos):
+            self.sound_manager.set_music_volume(max(0.0, vol - step))
+            return True
+
+        if self.rect_plus.collidepoint(pos):
+            self.sound_manager.set_music_volume(min(1.0, vol + step))
+            return True
+
+        return False
+
+    
