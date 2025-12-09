@@ -385,6 +385,8 @@ class Game:
 
         # HUD
         self.draw_hud()
+        
+        self.mute_button.draw(self.screen)
 
         # Overlays je nach State
         if self.state == GameState.QUESTION:
