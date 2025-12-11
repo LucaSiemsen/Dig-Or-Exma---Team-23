@@ -12,6 +12,27 @@ if TYPE_CHECKING:
 def load_scaled(path: str, size: int) -> pygame.Surface:
     img = pygame.image.load(path).convert_alpha()
     return pygame.transform.scale(img, (size, size))
+# Basisklasse für Gegner (Enemy) – Student benutzt sie NICHT.
+# Das ist nur notwendig, weil enemy.py davon erbt.
+# (Rekonstruktion einer alten Entity-Klasse, die früher existierte.)
+
+class Entity:
+    def __init__(self, grid_x, grid_y, tile_size, sprite):
+        self.grid_x = grid_x
+        self.grid_y = grid_y
+        self.tile_size = tile_size
+        self.sprite = sprite  # kann Sprite-Objekt ODER Surface sein
+
+    def draw(self, screen, offset_x, offset_y):
+        px = offset_x + self.grid_x * self.tile_size
+        py = offset_y + self.grid_y * self.tile_size
+
+        # Wenn das Sprite-Objekt selbst eine draw()-Methode hat (graphics.Sprite),
+        # rufen wir diese auf. Ansonsten gehen wir davon aus, dass es ein Surface ist.
+        if hasattr(self.sprite, "draw"):
+            self.sprite.draw(screen, px, py)
+        else:
+            screen.blit(self.sprite, (px, py))
 
 
 class Student:
