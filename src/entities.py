@@ -1,15 +1,17 @@
-# entities.py
-# hier ist der Spieler (Student) definiert
-
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
-
 import pygame
 
 if TYPE_CHECKING:
     from src.level import Level
-    from src.enemy import ProfessorEnemy #Hier den Prof importieren.
+    from src.enemy import ProfessorEnemy
+
+
+# kleine Hilfsfunktion zum Laden + Skalieren von Bildern
+def load_scaled(path: str, size: int) -> pygame.Surface:
+    img = pygame.image.load(path).convert_alpha()
+    return pygame.transform.scale(img, (size, size))
 
 
 class Student:
@@ -18,10 +20,54 @@ class Student:
         self.grid_x = grid_x
         self.grid_y = grid_y
         self.tile_size = tile_size
-        self.sprite = sprite
+
+        # das ursprünglich übergebene Bild hebe ich als Idle-Bild auf
+        self.sprite = pygame.transform.scale(sprite, (tile_size, tile_size))
+
+        # Richtung, in die der Student sich zuletzt bewegt hat
+        self.last_dx = 0
+        self.last_dy = 1  # Start: schaut nach unten
+
+                # Animation Frames laden (unsere Team-Sprites)
+
+        # Rechtslauf – nur die einzelnen Frames benutzen
+        self.anim_right = [
+            load_scaled("assets/sprites/student move right einzeln.png", tile_size),
+            load_scaled("assets/sprites/Student move right einzeln 1.png", tile_size),
+        ]
+
+        # Linkslauf – hier gibt es nur einen "einzeln", ich dupliziere ihn einfach
+        self.anim_left = [
+            load_scaled("assets/sprites/Student move left einzeln.png", tile_size),
+            load_scaled("assets/sprites/Student move left einzeln.png", tile_size),
+        ]
+
+        # Untenlauf – nur die zwei Einzelframes, NICHT das Sprite-Sheet
+        self.anim_down = [
+            load_scaled("assets/sprites/Student move down einzeln.png", tile_size),
+            load_scaled("assets/sprites/Student move down einzeln (2).png", tile_size),
+        ]
+
+        # Obenlauf – die drei Einzelframes
+        self.anim_up = [
+            load_scaled("assets/sprites/Student move up einzeln 1.png", tile_size),
+            load_scaled("assets/sprites/Student move up einzeln 2.png", tile_size),
+            load_scaled("assets/sprites/Student move up einzeln 3.png", tile_size),
+        ]
+
+
+
+        # Idle Bild, wenn er steht
+        self.idle = self.sprite
+
+        # aktueller Animationszustand
+        self.current_frames: list[pygame.Surface] = [self.idle]
+        self.frame = 0
+        self.frame_timer = 0.0
+        self.frame_speed = 0.15  # kleiner = schneller
 
         # falls wir in einen Professor reinlaufen und der eine Frage hat
-        self.pending_question = None      # kommt üblicherweise aus config.Question
+        self.pending_question = None  # kommt aus questions.py
         self.pending_professor: Optional["ProfessorEnemy"] = None
 
         # Status von PowerUps (z.B. Pizza-Schild)
@@ -38,11 +84,15 @@ class Student:
         self.grid_y = grid_y
         self.pending_question = None
         self.pending_professor = None
+        self.last_dx = 0
+        self.last_dy = 1
+        self.current_frames = [self.idle]
+        self.frame = 0
+        self.frame_timer = 0.0
 
     def move(self, dx: int, dy: int, level: "Level") -> Optional["ProfessorEnemy"]:
         """
-        bewegt den Studenten um ein Feld
-        dx, dy ∈ {-1, 0, 1}
+        bewegt den Studenten um ein Feld.
         das Level kümmert sich dann um:
         - Graben
         - ECTS
@@ -69,8 +119,12 @@ class Student:
         self.grid_x = new_x
         self.grid_y = new_y
 
-        # Level fragen, was auf dem neuen Feld liegt
-        # (ECTS, PowerUp, Professor)
+        # letzte Bewegungsrichtung merken (wichtig für Animation)
+        if dx != 0 or dy != 0:
+            self.last_dx = dx
+            self.last_dy = dy
+
+        # Level fragen, was auf dem neuen Feld liegt (ECTS, PowerUp, Professor)
         prof = level.on_player_enter_tile(new_x, new_y, self)
 
         # falls wir einen Professor getroffen haben, merken wir uns das
@@ -80,8 +134,36 @@ class Student:
 
         return prof
 
+    def update_animation(self, dt: float) -> None:
+        # anhand der letzten Richtung auswählen, welche Frames benutzt werden
+
+        if self.last_dx > 0:
+            self.current_frames = self.anim_right
+        elif self.last_dx < 0:
+            self.current_frames = self.anim_left
+        elif self.last_dy > 0:
+            self.current_frames = self.anim_down
+        elif self.last_dy < 0:
+            self.current_frames = self.anim_up
+        else:
+            # steht gerade, also Idle
+            self.current_frames = [self.idle]
+
+        # wenn nur ein Frame da ist (Idle), nicht animieren
+        if len(self.current_frames) <= 1:
+            self.frame = 0
+            return
+
+        # Animationslogik:
+        # Diesen Teil habe ich mir von ChatGPT erklären lassen,
+        # weil ich den Framewechsel mit Timer alleine nicht so hinbekommen hätte.
+        self.frame_timer += dt
+        if self.frame_timer >= self.frame_speed:
+            self.frame = (self.frame + 1) % len(self.current_frames)
+            self.frame_timer = 0.0
+
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         # Student an die richtige Stelle im Fenster zeichnen
         px = offset_x + self.grid_x * self.tile_size
         py = offset_y + self.grid_y * self.tile_size
-        screen.blit(self.sprite, (px, py))
+        screen.blit(self.current_frames[self.frame], (px, py))

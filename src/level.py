@@ -1,18 +1,15 @@
 # level.py
-# kümmert sich um das eigentliche Spielfeld / Level:
-# - Tiles (solid/empty)
-# - ECTS
-# - PowerUps
-# - Professoren
-# - BAföG-Timer + Win/Lose
-
-from __future__ import annotations
+# kümmert sich um das Spielfeld / Level:
+# - Tiles (Blöcke)
+# - ECTS (Sammelpunkte)
+# - PowerUps (optional)
+# - Professoren (Gegner)
+# - BAföG-Timer (Zeitbegrenzung)
 
 import random
-from typing import Optional
-
 import pygame
 
+# versucht, die Werte aus config zu holen
 try:
     from src.config import (
         GRID_COLS,
@@ -26,7 +23,7 @@ try:
     )
     from .timer import BafoegTimer
 except ImportError:
-    # Fallback, falls config.py noch nicht existiert
+    # einfache Standardwerte, falls config oder timer noch fehlen
     GRID_COLS = 12
     GRID_ROWS = 8
     GRID_MARGIN_X_TILES = 2
@@ -36,58 +33,14 @@ except ImportError:
     QUESTIONS_BY_PROF = {}
     PROFESSORS = []
 
-try:
-    from src.graphics import Sprite
-except ImportError:
-    # einfacher Platzhalter, falls graphics.py noch nicht existiert
-    class Sprite:
-        def __init__(self, path: str, w: int, h: int):
-            # einfaches rotes Rechteck statt richtigem Sprite
-            self.surface = pygame.Surface((w, h))
-            self.surface.fill((200, 80, 80))
-
-        def draw(self, screen: pygame.Surface, x: int, y: int):
-            screen.blit(self.surface, (x, y))
-
-# ProfessorEnemy absichern
-try:
-    from src.enemy import ProfessorEnemy
-except ImportError:
-    # einfacher Platzhalter, falls enemy.py noch fehlt
-    class ProfessorEnemy:
-        def __init__(self, x: int, y: int, tile_size: int, sprite, questions):
-            self.grid_x = x
-            self.grid_y = y
-            self.tile_size = tile_size
-            self.sprite = sprite
-            self.questions = questions or []
-
-        def update(self, dt: float, level: "Level"):
-            # hier könnte später Bewegung rein
-            pass
-
-        def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int):
-            px = offset_x + self.grid_x * self.tile_size
-            py = offset_y + self.grid_y * self.tile_size
-            self.sprite.draw(screen, px, py)
-
-        def get_question(self):
-            # Dummy-Frage, falls noch keine echten Fragen da sind
-            if self.questions:
-                return self.questions[0]
-            class DummyQuestion:
-                text = "Platzhalter-Frage (enemy.py fehlt noch)."
-                answers = ["A", "B", "C"]
-                correct = 0
-                explanation = "Hier kommen später echte Fragen hin."
-            return DummyQuestion()
-
     class BafoegTimer:
-        def __init__(self, start_time: float):
-            self.time_left = start_time
-            self.is_over = False
+        # sehr einfache Variante eines Timers
+        def __init__(self, start_time):
+            self.time_left = start_time  # noch verbleibende Zeit
+            self.is_over = False         # True, wenn Zeit abgelaufen
 
-        def update(self, dt: float):
+        def update(self, dt):
+            # zieht dt von der Zeit ab
             if self.is_over:
                 return
             self.time_left -= dt
@@ -95,40 +48,57 @@ except ImportError:
                 self.time_left = 0
                 self.is_over = True
 
-# ProfessorEnemy absichern
+# versucht, Sprite aus graphics.py zu laden
+try:
+    from src.graphics import Sprite
+except ImportError:
+    # einfache Ersatz-Variante, falls graphics.py fehlt
+    class Sprite:
+        def __init__(self, path, w, h):
+            # macht einfach ein rotes Rechteck anstatt richtiger Grafik
+            self.surface = pygame.Surface((w, h))
+            self.surface.fill((200, 80, 80))
+
+        def draw(self, screen, x, y):
+            screen.blit(self.surface, (x, y))
+
+# versucht, ProfessorEnemy aus enemy.py zu laden
 try:
     from src.enemy import ProfessorEnemy
 except ImportError:
-    # einfacher Platzhalter, falls enemy.py noch fehlt
+    # einfache Ersatz-Variante, falls enemy.py fehlt
     class ProfessorEnemy:
-        def __init__(self, x: int, y: int, tile_size: int, sprite, questions):
-            self.grid_x = x
-            self.grid_y = y
+        def __init__(self, x, y, tile_size, sprite, questions):
+            self.grid_x = x          # Position auf dem Grid (Spalte)
+            self.grid_y = y          # Position auf dem Grid (Zeile)
             self.tile_size = tile_size
             self.sprite = sprite
             self.questions = questions or []
 
-        def update(self, dt: float, level: "Level"):
-            # hier könnte später Bewegung rein
+        def update(self, dt, level):
+            # hier könnte man Bewegung und Logik einbauen
             pass
 
-        def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int):
+        def draw(self, screen, offset_x, offset_y):
+            # zeichnet den Professor an die richtige Bildschirmposition
             px = offset_x + self.grid_x * self.tile_size
             py = offset_y + self.grid_y * self.tile_size
             self.sprite.draw(screen, px, py)
 
         def get_question(self):
-            # Dummy-Frage, falls noch keine echten Fragen da sind
+            # gibt eine Frage zurück (hier nur Dummy)
             if self.questions:
                 return self.questions[0]
+
             class DummyQuestion:
                 text = "Platzhalter-Frage (enemy.py fehlt noch)."
                 answers = ["A", "B", "C"]
                 correct = 0
                 explanation = "Hier kommen später echte Fragen hin."
+
             return DummyQuestion()
 
-# PowerUps optional machen (falls powerups.py noch nicht da ist)
+# versucht, PowerUps zu laden (sind optional)
 try:
     from powerups import PowerUp, PowerUpType
     POWERUPS_AVAILABLE = True
@@ -137,127 +107,139 @@ except ImportError:
 
 
 class TileType:
-    # einfache „Enum“-Ersatzklasse
-    SOLID = 0   # Erde / Buchblock
+    # einfache "Enum" für Tile-Arten
+    SOLID = 0   # Erde / Block
     EMPTY = 1   # Tunnel
 
 
 class Tile:
-    # repräsentiert ein Feld im Grid
-    def __init__(self, ttype: int):
-        self.type = ttype
+    # Repräsentiert ein einzelnes Feld im Grid
+    def __init__(self, tile_type):
+        self.type = tile_type   # speichert, ob SOLID oder EMPTY
 
     @property
-    def is_solid(self) -> bool:
+    def is_solid(self):
+        # True, wenn Block / Erde
         return self.type == TileType.SOLID
 
     @property
-    def is_empty(self) -> bool:
+    def is_empty(self):
+        # True, wenn Tunnel
         return self.type == TileType.EMPTY
 
-    def dig(self) -> None:
-        # aus Erde wird Tunnel
+    def dig(self):
+        # macht aus einem Block einen Tunnel
         self.type = TileType.EMPTY
 
 
 class ECTS:
-    # gelbe Sammelpunkte (jeder gibt 1 ECTS)
-    def __init__(self, gx: int, gy: int, tile_size: int):
-        self.gx = gx
-        self.gy = gy
-        self.tile_size = tile_size
+    # Repräsentiert einen Sammelpunkt (1 ECTS)
+    def __init__(self, grid_x, grid_y, tile_size):
+        self.gx = grid_x            # Grid-Spalte
+        self.gy = grid_y            # Grid-Zeile
+        self.tile_size = tile_size  # Größe der Kachel
 
-    def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
+    def draw(self, screen, offset_x, offset_y):
+        # zeichnet einen gelben Punkt für ECTS
         px = offset_x + self.gx * self.tile_size
         py = offset_y + self.gy * self.tile_size
-        s = self.tile_size // 5
+        rand = self.tile_size // 5  # kleiner Rand im Tile
         rect = pygame.Rect(
-            px + s,
-            py + s,
-            self.tile_size - 2 * s,
-            self.tile_size - 2 * s,
+            px + rand,
+            py + rand,
+            self.tile_size - 2 * rand,
+            self.tile_size - 2 * rand,
         )
-        pygame.draw.rect(screen, (250, 230, 80), rect)
+        pygame.draw.rect(screen, (250, 230, 80), rect)  # gelbes Rechteck
 
 
 class Level:
-    def __init__(self, tile_size: int):
-        self.cols = GRID_COLS
-        self.rows = GRID_ROWS
-        self.tile_size = tile_size
+    # Repräsentiert das komplette Level (Spielfeld + Inhalte)
+    def __init__(self, tile_size):
+        # Initialisiert ein Level.
+        # :param tile_size: Größe eines Tiles in Pixeln
 
-        # 2D-Liste mit Tiles (alles erstmal SOLID)
-        self.tiles: list[list[Tile]] = [
-            [Tile(TileType.SOLID) for _ in range(self.rows)]
-            for _ in range(self.cols)
-        ]
+        self.cols = GRID_COLS          # Anzahl Spalten
+        self.rows = GRID_ROWS          # Anzahl Zeilen
+        self.tile_size = tile_size     # Tile-Größe
 
-        # BAföG-Timer
+        # 2D-Liste mit Tiles (erstmal alles SOLID)
+        self.tiles = []
+        for x in range(self.cols):
+            spalte = []
+            for y in range(self.rows):
+                spalte.append(Tile(TileType.SOLID))
+            self.tiles.append(spalte)
+
+        # BAföG-Timer (Zeitbegrenzung)
         self.timer = BafoegTimer(BAFOEG_TIME_SECONDS)
 
         # Inhalte im Level
-        self.ects_items: list[ECTS] = []
-        self.powerups: list[PowerUp] = []
-        self.professors: list[ProfessorEnemy] = []
+        self.ects_items = []      # Liste mit allen ECTS
+        self.powerups = []        # Liste mit allen PowerUps
+        self.professors = []      # Liste mit allen Professoren
 
         # Status vom Level
-        self.collected_ects = 0
-        self.required_ects = REQUIRED_ECTS
-        self.is_game_over = False
-        self.is_won = False
-        self.game_over_reason: str = ""
-        self.last_powerup_message: Optional[str] = None
+        self.collected_ects = 0   # bisher eingesammelte ECTS
+        self.required_ects = REQUIRED_ECTS  # ECTS-Zahl zum Gewinnen
+        self.is_game_over = False # True, wenn verloren
+        self.is_won = False       # True, wenn gewonnen
+        self.game_over_reason = ""        # Text, warum verloren wurde
+        self.last_powerup_message = None  # Text zum letzten PowerUp-Effekt
 
-        # Welt wird direkt beim Erzeugen gebaut
+        # beim Erzeugen direkt das Level aufbauen
         self._build_world()
 
     @property
-    def is_finished(self) -> bool:
-        # True, wenn das Level vorbei ist (egal ob gewonnen oder verloren)
+    def is_finished(self):
+        # True, wenn das Level vorbei ist (egal ob gewonnen/verloren/Zeit um)
         return self.is_game_over or self.is_won or self.timer.is_over
 
-    def _build_world(self) -> None:
+    def _build_world(self):
         """
-        sehr simples Level:
-        - alles erst SOLID
+        Baut ein einfaches Level:
+        - alles SOLID
         - kleiner Starttunnel
-        - ECTS auf SOLID-Feldern
-        - PowerUps nur, wenn powerups.py vorhanden ist
-        - Professoren spawnen irgendwo
+        - ECTS auf zufälligen Feldern
+        - PowerUps (falls vorhanden)
+        - Professoren zufällig platzieren
         """
-        # alles SOLID setzen
+
+        # alles SOLID (zur Sicherheit, falls später was geändert wird)
         for x in range(self.cols):
             for y in range(self.rows):
                 self.tiles[x][y].type = TileType.SOLID
 
-        # Start-Korridor ungefähr links oben
+        # kleiner Start-Tunnel links oben
         self.tiles[1][1].dig()
         self.tiles[1][2].dig()
         self.tiles[2][2].dig()
 
-        # ECTS verteilen (nur auf SOLID-Feldern, nicht auf Startfeld)
-        ects_positions: set[tuple[int, int]] = set()
+        # ECTS zufällig auf SOLID-Feldern verteilen (nicht auf Startfeld)
+        ects_positions = set()
         while len(ects_positions) < self.required_ects:
             x = random.randrange(self.cols)
             y = random.randrange(self.rows)
+
             if (x, y) == (1, 1):
-                continue
+                continue   # nicht auf Startfeld
+
             if self.tiles[x][y].is_solid:
                 ects_positions.add((x, y))
 
         for (x, y) in ects_positions:
             self.ects_items.append(ECTS(x, y, self.tile_size))
 
-        # PowerUps verteilen (nur wenn powerups.py existiert)
+        # PowerUps auf einige ECTS-Felder legen (nur wenn powerups.py existiert)
         if POWERUPS_AVAILABLE:
-            candidates = list(ects_positions)
-            random.shuffle(candidates)
+            kandidaten = list(ects_positions)
+            random.shuffle(kandidaten)
 
-            # versuchen, PowerUpType wie ein Enum zu behandeln
+            # versucht PowerUpType wie ein Enum zu behandeln
             try:
                 type_list = list(PowerUpType)
             except TypeError:
-                # falls das nicht geht (z.B. einfache Klasse), Liste manuell bauen
+                # einfacher Fallback: schaut nach bekannten Attributen
                 type_list = []
                 if hasattr(PowerUpType, "SPEED"):
                     type_list.append(PowerUpType.SPEED)
@@ -266,24 +248,24 @@ class Level:
                 if hasattr(PowerUpType, "SHIELD"):
                     type_list.append(PowerUpType.SHIELD)
                 if not type_list:
-                    # falls gar nichts da ist, nehmen wir einfach PowerUpType selbst
                     type_list = [PowerUpType]
 
             # ungefähr die Hälfte der ECTS-Felder bekommt ein PowerUp
-            for (x, y) in candidates[: max(1, self.required_ects // 2)]:
+            anzahl = max(1, self.required_ects // 2)
+            for (x, y) in kandidaten[:anzahl]:
                 ptype = random.choice(type_list)
                 self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
 
         # Professoren erzeugen
         for prof_info in PROFESSORS:
-            img_path = prof_info["sprite"]
-            qlist = prof_info["questions"]
+            bild_pfad = prof_info["sprite"]     # Bild für den Professor
+            fragen_liste = prof_info["questions"]  # Fragen für diesen Prof
 
-            sprite = Sprite(img_path, self.tile_size, self.tile_size)
+            sprite = Sprite(bild_pfad, self.tile_size, self.tile_size)
 
-            # Prof darf überall spawnen, aber:
+            # Prof soll zufällig erscheinen, aber:
             # - nicht auf Startfeld
-            # - nicht auf Feld, wo schon ein anderer Prof steht
+            # - nicht auf einem Feld, wo schon ein anderer Prof steht
             while True:
                 x = random.randrange(self.cols)
                 y = random.randrange(self.rows)
@@ -291,27 +273,33 @@ class Level:
                 if (x, y) == (1, 1):
                     continue
 
-                if any(p.grid_x == x and p.grid_y == y for p in self.professors):
+                kollidiert = False
+                for p in self.professors:
+                    if p.grid_x == x and p.grid_y == y:
+                        kollidiert = True
+                        break
+                if kollidiert:
                     continue
 
-                prof = ProfessorEnemy(x, y, self.tile_size, sprite, qlist)
+                prof = ProfessorEnemy(x, y, self.tile_size, sprite,fragen_liste)
                 self.professors.append(prof)
                 break
 
-
-    def in_bounds(self, x: int, y: int) -> bool:
-        # check, ob Koordinaten noch innerhalb des Grids liegen
+    def in_bounds(self, x, y):
+        # prüft, ob (x,y) noch im Grid liegt
+        # :return: True, wenn 0 <= x < cols und 0 <= y < rows
         return 0 <= x < self.cols and 0 <= y < self.rows
 
-    def dig(self, x: int, y: int) -> None:
-        # Wrapper, damit andere Klassen nicht direkt auf tiles zugreifen müssen
+    def dig(self, x, y):
+        # Hilfsfunktion, damit andere Klassen nicht direkt tiles[x][y] ändern
         self.tiles[x][y].dig()
 
-    def update(self, dt: float) -> None:
+    def update(self, dt):
         # wird pro Frame vom Game aufgerufen
+        # :param dt: vergangene Zeit (Sekunden) seit letztem Frame
 
         if self.is_finished:
-            return
+            return  # nichts mehr updaten, wenn Spiel vorbei
 
         # Timer aktualisieren
         self.timer.update(dt)
@@ -319,21 +307,23 @@ class Level:
             self.is_game_over = True
             self.game_over_reason = "BAföG-Zeit abgelaufen."
 
-        # Professoren bewegen (Logik steckt in ProfessorEnemy)
+        # alle Professoren updaten (z.B. Bewegung)
         for prof in self.professors:
             prof.update(dt, self)
 
-    def on_player_enter_tile(self, gx: int, gy: int, student) -> Optional[ProfessorEnemy]:
+    def on_player_enter_tile(self, gx, gy, student):
         """
-        wird von Student.move() aufgerufen, wenn der Spieler auf ein neues Feld kommt
+        Wird aufgerufen, wenn der Spieler ein neues Feld betritt.
 
-        hier passiert:
+        Hier passiert:
         - ECTS einsammeln
-        - PowerUps aktivieren
-        - Win-Check
+        - PowerUps auslösen
+        - Gewinn überprüfen
         - schauen, ob ein Professor auf dem Feld steht
+        :return: Professor-Objekt, wenn einer dort steht, sonst None
         """
-        touched_prof: Optional[ProfessorEnemy] = None
+
+        beruehrter_prof = None
 
         # ECTS einsammeln
         for ects in list(self.ects_items):
@@ -341,7 +331,7 @@ class Level:
                 self.ects_items.remove(ects)
                 self.collected_ects += 1
 
-        # Sieg, falls genug ECTS da sind
+        # prüfen, ob genug ECTS für den Sieg gesammelt wurden
         if self.collected_ects >= self.required_ects and not self.is_game_over:
             self.is_won = True
 
@@ -349,36 +339,37 @@ class Level:
         for p in list(self.powerups):
             if p.grid_x == gx and p.grid_y == gy:
                 self.powerups.remove(p)
-                msg = p.apply_to(self, student)
-                if msg:
-                    self.last_powerup_message = msg
+                nachricht = p.apply_to(self, student)
+                if nachricht:
+                    self.last_powerup_message = nachricht
 
-        # checken, ob auf dem Feld ein Professor steht
+        # prüfen, ob auf dem Feld ein Professor steht
         for prof in self.professors:
             if prof.grid_x == gx and prof.grid_y == gy:
-                touched_prof = prof
+                beruehrter_prof = prof
                 break
 
-        return touched_prof
+        return beruehrter_prof
 
-    def get_question_for_prof(self, prof: ProfessorEnemy):
-        """
-        wird vom Game aufgerufen, wenn der Spieler auf einem Professor-Feld steht
-        die eigentliche Frage kommt aber vom Professor-Objekt selbst
-        """
+    def get_question_for_prof(self, prof):
+        # gibt die Frage zurück, die zu einem Professor gehört
         return prof.get_question()
 
-    def draw(
-        self,
-        screen: pygame.Surface,
-        offset_x: int,
-        offset_y: int,
-        block_solid,
-        block_empty,
-    ) -> None:
-        # zeichnet das komplette Level (Grid + ECTS + PowerUps + Profs)
+    def remove_professor(self, prof):
+        # löscht einen Professor aus dem Level,
+        # z.B. wenn die Frage richtig beantwortet wurde
+        if prof in self.professors:
+            self.professors.remove(prof)
 
-        # Tiles
+    def draw(self, screen, offset_x, offset_y, block_solid, block_empty):
+        # zeichnet das komplette Level (Tiles + ECTS + PowerUps + Professoren)
+        # :param screen: pygame-Fenster
+        # :param offset_x: X-Offset für das Level
+        # :param offset_y: Y-Offset für das Level
+        # :param block_solid: Objekt/Sprite für feste Blöcke
+        # :param block_empty: Objekt/Sprite für Tunnel
+
+        # Tiles zeichnen
         for x in range(self.cols):
             for y in range(self.rows):
                 tile = self.tiles[x][y]
@@ -390,14 +381,14 @@ class Level:
                 else:
                     block_empty.draw(screen, px, py)
 
-        # ECTS
+        # ECTS zeichnen
         for ects in self.ects_items:
             ects.draw(screen, offset_x, offset_y)
 
-        # PowerUps
+        # PowerUps zeichnen
         for p in self.powerups:
             p.draw(screen, offset_x, offset_y)
 
-        # Professoren
+        # Professoren zeichnen
         for prof in self.professors:
             prof.draw(screen, offset_x, offset_y)

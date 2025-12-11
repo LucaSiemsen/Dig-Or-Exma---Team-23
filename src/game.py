@@ -129,6 +129,8 @@ class Game:
         self.active_prof = None
         self.active_question = None
         self.last_question_feedback: str | None = None
+        self.mistakes = 0   # Fehlerzähler pro Level
+
 
         # Level + Student anlegen
         self._create_level_and_student()
@@ -160,6 +162,8 @@ class Game:
         self._create_level_and_student()
         self.state = GameState.RUNNING
         self.last_question_feedback = None
+        self.mistakes = 0
+
 
     def run(self) -> None:
         # Hauptloop vom Spiel
@@ -181,7 +185,8 @@ class Game:
             # nur updaten, wenn Spiel wirklich läuft
             if self.state == GameState.RUNNING and self.level is not None:
                 self.level.update(dt)
-
+                self.student.update_animation(dt)
+                self.check_prof_collision()
                 if self.level.is_game_over:
                     self.state = GameState.GAME_OVER
                 elif self.level.is_won:
@@ -270,6 +275,22 @@ class Game:
                 self.state = GameState.MENU
                 self._create_level_and_student()
 
+
+    def check_prof_collision(self):
+        if self.level is None or self.student is None:
+            return
+
+        for prof in self.level.professors:
+            if prof.grid_x == self.student.grid_x and prof.grid_y == self.student.grid_y:
+                #   Frage starten, wenn Professor und Spieler auf dem gleichen Feld stehen
+                self.open_question(prof)
+                self.sound_manager.play_hitsound()
+                return
+
+
+
+
+
     def open_question(self, prof) -> None:
         # holt die passende Frage vom Level und zeigt den Fragen-State an
         assert self.level is not None
@@ -300,13 +321,25 @@ class Game:
             # Professor aus dem Level entfernen
             self.level.remove_professor(self.active_prof)
         else:
-            # falsche Antwort -> Zeitstrafe
+            #falsche Antwort
+            self.mistakes += 1
+
+            # Feedback anzeigen
+            self.last_question_feedback = (
+                f"Falsch beantwortet! ({self.mistakes}/2 Fehler) " + q.explanation
+            )
+
+            # Wenn 2 Fehler -> Game Over
+            if self.mistakes >= 2:
+                self.level.is_game_over = True
+                self.state = GameState.GAME_OVER
+                return
+
+            # Wenn erst 1 Fehler -> Zeitstrafe und weiterspielen
             self.level.timer.time_left = max(
                 5.0, self.level.timer.time_left - 10.0
             )
-            self.last_question_feedback = (
-                "Nicht ganz richtig... -10s BAföG-Zeit. " + q.explanation
-            )
+
 
         self.active_prof = None
         self.active_question = None
