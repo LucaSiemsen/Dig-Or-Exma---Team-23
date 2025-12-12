@@ -140,4 +140,18 @@ class VolumeSlider:
 
         return False
 
-    
+def draw_buff_timer_top_right(screen, font, student, x=1100, y=20, size=40, gap=2):
+    if student is None:
+        return
+
+    if student.has_pizza_shield and student.pizza_shield_left > 0:
+        secs = int(student.pizza_shield_left)
+        text = font.render(f"Schild: {secs}s", True, (255, 255, 255))
+
+        img_shield = pygame.image.load("assets/sprites/pizza ganz.png").convert_alpha()
+        img_shield = pygame.transform.scale(img_shield, (size, size))
+
+        screen.blit(img_shield, (x, y))
+
+        text_rect = text.get_rect(midleft=(x + size + gap, y + size // 2))
+        screen.blit(text, text_rect)

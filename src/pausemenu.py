@@ -9,11 +9,9 @@ class PauseMenu:
         self.font_title = font_title
         self.font_small = font_small
         self.sound_manager = sound_manager #Referenz auf SoundManager (für Lautstärke)
-
         self.overlay = pygame.Surface((self.width, self.height))
         self.overlay.set_alpha(180)
         self.overlay.fill((0, 0, 0))
-
         button_width, button_height = 320, 50
         center_x, center_y = width // 2, height // 2
 

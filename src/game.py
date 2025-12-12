@@ -10,6 +10,7 @@ import pygame
 from .pausemenu import PauseMenu
 from .sound import SoundManager
 from .HUD import Mutebutton
+from .ui import draw_buff_timer_top_right
 
 # ------------------------------------------------------------------------------
 # GenAI-Kennzeichnung
@@ -202,6 +203,7 @@ class Game:
             if self.state == GameState.RUNNING:
                 self.level.update(dt)
                 self.student.update_animation(dt)
+                self.student.update_buffs(dt)
                 self.check_prof_collision()
 
                 # Übergang in neue States
@@ -503,7 +505,7 @@ class Game:
             self.screen.blit(msg, (20, self.height - 40))
 
         self.mute_button.draw(self.screen)
-
+        draw_buff_timer_top_right(self.screen, self.font_small, self.student)
     # ------------------------------------------------------------------------------
     # Frage-Overlay
     # ------------------------------------------------------------------------------

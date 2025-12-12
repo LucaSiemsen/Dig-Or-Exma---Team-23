@@ -86,6 +86,7 @@ class PowerUp:
 
         if self.ptype == PowerUpType.PIZZA:
             student.has_pizza_shield = True
+            student.pizza_shield_left = 10.0   # z.B. 10 Sekunden
             return "Pizza: Ein Treffer vom Prof wird ignoriert. 🍕"
 
         if self.ptype == PowerUpType.PARTY:

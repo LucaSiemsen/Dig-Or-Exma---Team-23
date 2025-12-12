@@ -93,6 +93,7 @@ class Student:
 
         # Status von PowerUps (z.B. Pizza-Schild)
         self.has_pizza_shield: bool = False
+        self.pizza_shield_left: float = 0.0
 
     @property
     def pos(self) -> tuple[int, int]:
@@ -182,6 +183,14 @@ class Student:
         if self.frame_timer >= self.frame_speed:
             self.frame = (self.frame + 1) % len(self.current_frames)
             self.frame_timer = 0.0
+    
+    #Zählt Buff-Zeiten runter und deaktiviert sie, wenn abgelaufen
+    def update_buffs(self, dt: float) -> None:
+        if self.pizza_shield_left > 0.0:
+            self.pizza_shield_left = max(0.0, self.pizza_shield_left - dt)
+            if self.pizza_shield_left == 0.0:
+                self.has_pizza_shield = False
+
 
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         # Student an die richtige Stelle im Fenster zeichnen
