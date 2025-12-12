@@ -105,9 +105,9 @@ class Game:
             self.background.fill((20, 20, 30))
 
         # Boden und Tunnelblöcke
-        self.block_solid = Sprite("assets/sprites/buchblock1.png",
+        self.block_solid = Sprite("assets/sprites/block.png",
                                   self.tile_size, self.tile_size)
-        self.block_empty = Sprite("assets/sprites/leerer_block.png",
+        self.block_empty = Sprite("assets/sprites/floor.png",
                                   self.tile_size, self.tile_size)
 
         # Soundverwaltung
