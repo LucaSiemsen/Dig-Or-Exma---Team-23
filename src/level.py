@@ -213,16 +213,26 @@ class Level:
 
         for (x, y) in ects_positions:
             self.ects_items.append(ECTS(x, y, self.tile_size))
-        # PowerUps auf einige ECTS-Felder legen
-        kandidaten = list(ects_positions)
-        random.shuffle(kandidaten)
+        # PowerUps platzieren (aktuell nur Pizza, auf leeren Feldern)
+            kandidaten = []
+            for x in range(self.cols):
+                for y in range(self.rows):
+                    if (x, y) == (1, 1):
+                        continue  # Startfeld frei lassen
+                    if (x, y) in ects_positions:
+                        continue  # nicht auf Coins
+                    if not self.tiles[x][y].is_solid:
+                        continue  # NUR auf leeren Blöcken (nicht im Tunnel)
+                    kandidaten.append((x, y))
 
-        anzahl = max(1, self.required_ects // 2)  # z.B. Hälfte der Coins bekommt ein PowerUp
-        type_list = list(PowerUpType)            # PIZZA, PARTY, CHATGPT
+            random.shuffle(kandidaten)
 
-        for (x, y) in kandidaten[:anzahl]:
-            ptype = random.choice(type_list)
-            self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
+            anzahl = max(1, self.required_ects // 2)
+            for (x, y) in kandidaten[:anzahl]:
+                self.powerups.append(
+                    PowerUp(x, y, self.tile_size, PowerUpType.PIZZA)
+                )
+
 
         # Professoren erzeugen
         for prof_info in PROFESSORS:
