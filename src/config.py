@@ -129,3 +129,17 @@ PROFESSORS = [
         "questions": QUESTIONS_BY_PROF["net"],
     },
 ]
+
+LEVELS = [
+    # Level 1: 2 Professoren frei, 2 ECTS, 1 Pizza
+    {"ects": 2, "pizzas": 1, "prof_count": 2, "guard_mode": False},
+
+    # Level 2: 2 Professoren, einer “bewacht” ein ECTS, 2 ECTS, 2 Pizzen
+    {"ects": 2, "pizzas": 2, "prof_count": 2, "guard_mode": True},
+
+    # Level 3 (später): 3 ECTS nahe Ecken, Radius-Logik
+    {"ects": 3, "pizzas": 3, "prof_count": 3, "guard_mode": False},
+
+    # Level 4 (später): 3 ECTS, 2 nahe beieinander, mehr Pizzen
+    {"ects": 3, "pizzas": 4, "prof_count": 3, "guard_mode": False},
+]

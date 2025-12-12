@@ -152,7 +152,7 @@ class Game:
     # Neues Level erstellen + Student spawnen
     # ------------------------------------------------------------------------------
     def _create_level_and_student(self):
-        self.level = Level(self.tile_size)
+        self.level = Level(self.tile_size, level_index=0)
 
         # Startkoordinaten – momentan fest, könnte man später zufällig machen
         start_x, start_y = 1, 1
