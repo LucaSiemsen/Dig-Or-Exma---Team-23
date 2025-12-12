@@ -12,15 +12,19 @@
 # ============================================================
 
 from __future__ import annotations
-
 from enum import Enum, auto
 from typing import TYPE_CHECKING
-
 import pygame
+# kleine Hilfsfunktion: Bild laden und auf Tile-Größe skalieren
+def load_scaled(path: str, size: int) -> pygame.Surface:
+        img = pygame.image.load(path).convert_alpha()
+        return pygame.transform.scale(img, (size, size))
 
 if TYPE_CHECKING:
     from .level import Level
     from .entities import Student
+
+
 
 
 class PowerUpType(Enum):
@@ -28,36 +32,48 @@ class PowerUpType(Enum):
     PARTY = auto()
     CHATGPT = auto()
 
-
 class PowerUp:
+
     def __init__(self, grid_x: int, grid_y: int, tile_size: int, ptype: PowerUpType):
         self.grid_x = grid_x
         self.grid_y = grid_y
         self.tile_size = tile_size
         self.ptype = ptype
-
+        # Sprite nur laden, wenn es Pizza ist
+        self.sprite = None
+        if self.ptype == PowerUpType.PIZZA:
+            self.sprite = load_scaled(
+                "assets/sprites/pizza ganz.png",
+                tile_size
+            )
     # --------------------------------------------------------
     # Zeichnen
     # --------------------------------------------------------
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
-        px = offset_x + self.grid_x * self.tile_size
-        py = offset_y + self.grid_y * self.tile_size
-        margin = self.tile_size // 6
+            px = offset_x + self.grid_x * self.tile_size
+            py = offset_y + self.grid_y * self.tile_size
 
-        if self.ptype == PowerUpType.PIZZA:
-            color = (255, 160, 90)   # orange
-        elif self.ptype == PowerUpType.PARTY:
-            color = (180, 80, 200)   # lila
-        else:  # CHATGPT
-            color = (80, 220, 180)   # türkis
+            # Wenn Pizza-PNG vorhanden → zeichnen
+            if self.ptype == PowerUpType.PIZZA and self.sprite is not None:
+                screen.blit(self.sprite, (px, py))
+                return
 
-        rect = pygame.Rect(
-            px + margin,
-            py + margin,
-            self.tile_size - 2 * margin,
-            self.tile_size - 2 * margin,
-        )
-        pygame.draw.rect(screen, color, rect)
+            # Fallback: farbiges Rechteck (z.B. für spätere PowerUps)
+            margin = self.tile_size // 6
+
+            if self.ptype == PowerUpType.PARTY:
+                color = (180, 80, 200)
+            else:  # CHATGPT
+                color = (80, 220, 180)
+
+            rect = pygame.Rect(
+                px + margin,
+                py + margin,
+                self.tile_size - 2 * margin,
+                self.tile_size - 2 * margin,
+            )
+            pygame.draw.rect(screen, color, rect)
+
 
     # --------------------------------------------------------
     # Wirkung

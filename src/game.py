@@ -24,12 +24,6 @@ from .HUD import Mutebutton
 #
 #    Bitte erkläre mir, wie man diese Teile sinnvoll trennt und kommentiert,
 #    ohne meine vorhandene Architektur umzubauen."
-#
-# Hinweis:
-#   Ich habe die KI nur verwendet, um schwer verständliche Zusammenhänge
-#   (z. B. State-Machine-Abläufe, Frage-Handling, Fehlerlogik) klarer zu
-#   strukturieren und zu dokumentieren. Der restliche Code stammt aus eigener
-#   Arbeit bzw. Teamarbeit.
 # ------------------------------------------------------------------------------
 
 # Konfigurationswerte (Fallbacks wenn config.py fehlt)
@@ -447,6 +441,12 @@ class Game:
         # ECTS-Objekte
         for ects in self.level.ects_items:
             ects.draw(self.screen, self.grid_offset_x, self.grid_offset_y)
+
+
+        # PowerUps
+        for p in self.level.powerups:
+            p.draw(self.screen, self.grid_offset_x, self.grid_offset_y)
+
 
         # Professoren
         for prof in self.level.professors:

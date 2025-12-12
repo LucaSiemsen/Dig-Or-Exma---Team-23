@@ -7,7 +7,11 @@
 # - BAföG-Timer (Zeitbegrenzung)
 
 import random
+import os
 import pygame
+from src.graphics import Sprite
+from src.enemy import ProfessorEnemy
+from src.powerups import PowerUp, PowerUpType
 
 # versucht, die Werte aus config zu holen
 try:
@@ -48,10 +52,6 @@ except ImportError:
                 self.time_left = 0
                 self.is_over = True
 
-# versucht, Sprite aus graphics.py zu laden
-try:
-    from src.graphics import Sprite
-except ImportError:
     # einfache Ersatz-Variante, falls graphics.py fehlt
     class Sprite:
         def __init__(self, path, w, h):
@@ -61,49 +61,6 @@ except ImportError:
 
         def draw(self, screen, x, y):
             screen.blit(self.surface, (x, y))
-
-# versucht, ProfessorEnemy aus enemy.py zu laden
-try:
-    from src.enemy import ProfessorEnemy
-except ImportError:
-    # einfache Ersatz-Variante, falls enemy.py fehlt
-    class ProfessorEnemy:
-        def __init__(self, x, y, tile_size, sprite, questions):
-            self.grid_x = x          # Position auf dem Grid (Spalte)
-            self.grid_y = y          # Position auf dem Grid (Zeile)
-            self.tile_size = tile_size
-            self.sprite = sprite
-            self.questions = questions or []
-
-        def update(self, dt, level):
-            # hier könnte man Bewegung und Logik einbauen
-            pass
-
-        def draw(self, screen, offset_x, offset_y):
-            # zeichnet den Professor an die richtige Bildschirmposition
-            px = offset_x + self.grid_x * self.tile_size
-            py = offset_y + self.grid_y * self.tile_size
-            self.sprite.draw(screen, px, py)
-
-        def get_question(self):
-            # gibt eine Frage zurück (hier nur Dummy)
-            if self.questions:
-                return self.questions[0]
-
-            class DummyQuestion:
-                text = "Platzhalter-Frage (enemy.py fehlt noch)."
-                answers = ["A", "B", "C"]
-                correct = 0
-                explanation = "Hier kommen später echte Fragen hin."
-
-            return DummyQuestion()
-
-# versucht, PowerUps zu laden (sind optional)
-try:
-    from powerups import PowerUp, PowerUpType
-    POWERUPS_AVAILABLE = True
-except ImportError:
-    POWERUPS_AVAILABLE = False
 
 
 class TileType:
@@ -133,24 +90,51 @@ class Tile:
 
 
 class ECTS:
-    # Repräsentiert einen Sammelpunkt (1 ECTS)
+    # Repräsentiert einen Sammelpunkt (Coin/ECTS)
     def __init__(self, grid_x, grid_y, tile_size):
-        self.gx = grid_x            # Grid-Spalte
-        self.gy = grid_y            # Grid-Zeile
-        self.tile_size = tile_size  # Größe der Kachel
+        self.gx = grid_x
+        self.gy = grid_y
+        self.tile_size = tile_size
+
+        # Coin-Sprite-Strip (13 Frames untereinander)
+        self.frames = []
+        self._load_coin_frames()
+
+    def _load_coin_frames(self):
+        # Pfad mit Leerzeichen ist okay, aber muss exakt stimmen
+        path = os.path.join("assets", "sprites", "Coin v3 (kann man animiert darstellen).png")
+
+        try:
+            sheet = pygame.image.load(path).convert_alpha()
+        except:
+            # Fallback: wenn das Sheet nicht gefunden wird, nehmen wir Coin v1
+            fallback = os.path.join("assets", "sprites", "Coin v1.png")
+            img = pygame.image.load(fallback).convert_alpha()
+            img = pygame.transform.scale(img, (self.tile_size, self.tile_size))
+            self.frames = [img]
+            return
+
+        frame_w = sheet.get_width()
+        frame_h = frame_w  # weil Frames quadratisch sind (16x16)
+        count = sheet.get_height() // frame_h
+
+        for i in range(count):
+            rect = pygame.Rect(0, i * frame_h, frame_w, frame_h)
+            frame = sheet.subsurface(rect).copy()
+            frame = pygame.transform.scale(frame, (self.tile_size, self.tile_size))
+            self.frames.append(frame)
+
+        if not self.frames:
+            self.frames = [pygame.Surface((self.tile_size, self.tile_size))]
 
     def draw(self, screen, offset_x, offset_y):
-        # zeichnet einen gelben Punkt für ECTS
         px = offset_x + self.gx * self.tile_size
         py = offset_y + self.gy * self.tile_size
-        rand = self.tile_size // 5  # kleiner Rand im Tile
-        rect = pygame.Rect(
-            px + rand,
-            py + rand,
-            self.tile_size - 2 * rand,
-            self.tile_size - 2 * rand,
-        )
-        pygame.draw.rect(screen, (250, 230, 80), rect)  # gelbes Rechteck
+
+        # Animation über Zeit: alle 100ms ein Frame weiter
+        idx = (pygame.time.get_ticks() // 100) % len(self.frames)
+        screen.blit(self.frames[idx], (px, py))
+
 
 
 class Level:
@@ -229,32 +213,16 @@ class Level:
 
         for (x, y) in ects_positions:
             self.ects_items.append(ECTS(x, y, self.tile_size))
+        # PowerUps auf einige ECTS-Felder legen
+        kandidaten = list(ects_positions)
+        random.shuffle(kandidaten)
 
-        # PowerUps auf einige ECTS-Felder legen (nur wenn powerups.py existiert)
-        if POWERUPS_AVAILABLE:
-            kandidaten = list(ects_positions)
-            random.shuffle(kandidaten)
+        anzahl = max(1, self.required_ects // 2)  # z.B. Hälfte der Coins bekommt ein PowerUp
+        type_list = list(PowerUpType)            # PIZZA, PARTY, CHATGPT
 
-            # versucht PowerUpType wie ein Enum zu behandeln
-            try:
-                type_list = list(PowerUpType)
-            except TypeError:
-                # einfacher Fallback: schaut nach bekannten Attributen
-                type_list = []
-                if hasattr(PowerUpType, "SPEED"):
-                    type_list.append(PowerUpType.SPEED)
-                if hasattr(PowerUpType, "TIME"):
-                    type_list.append(PowerUpType.TIME)
-                if hasattr(PowerUpType, "SHIELD"):
-                    type_list.append(PowerUpType.SHIELD)
-                if not type_list:
-                    type_list = [PowerUpType]
-
-            # ungefähr die Hälfte der ECTS-Felder bekommt ein PowerUp
-            anzahl = max(1, self.required_ects // 2)
-            for (x, y) in kandidaten[:anzahl]:
-                ptype = random.choice(type_list)
-                self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
+        for (x, y) in kandidaten[:anzahl]:
+            ptype = random.choice(type_list)
+            self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
 
         # Professoren erzeugen
         for prof_info in PROFESSORS:
@@ -281,7 +249,8 @@ class Level:
                 if kollidiert:
                     continue
 
-                prof = ProfessorEnemy(x, y, self.tile_size, sprite,fragen_liste)
+                prof = ProfessorEnemy(x, y, self.tile_size, sprite)
+                prof.questions_pool = fragen_liste
                 self.professors.append(prof)
                 break
 
