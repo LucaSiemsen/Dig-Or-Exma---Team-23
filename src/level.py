@@ -24,6 +24,7 @@ try:
         REQUIRED_ECTS,
         QUESTIONS_BY_PROF,
         PROFESSORS,
+        LEVELS,
     )
     from .timer import BafoegTimer
 except ImportError:
@@ -36,6 +37,8 @@ except ImportError:
     REQUIRED_ECTS = 5
     QUESTIONS_BY_PROF = {}
     PROFESSORS = []
+    LEVELS = [{"ects": REQUIRED_ECTS, "pizzas": 1, "prof_count": len(PROFESSORS), "guard_mode": False}]
+
 
     class BafoegTimer:
         # sehr einfache Variante eines Timers
@@ -139,7 +142,9 @@ class ECTS:
 
 class Level:
     # Repräsentiert das komplette Level (Spielfeld + Inhalte)
-    def __init__(self, tile_size):
+    def __init__(self, tile_size, level_index: int = 0):
+        self.level_index = level_index
+
         # Initialisiert ein Level.
         # :param tile_size: Größe eines Tiles in Pixeln
 
@@ -181,78 +186,191 @@ class Level:
 
     def _build_world(self):
         """
-        Baut ein einfaches Level:
-        - alles SOLID
-        - kleiner Starttunnel
-        - ECTS auf zufälligen Feldern
-        - PowerUps (falls vorhanden)
-        - Professoren zufällig platzieren
+        Baut das Level abhängig von self.level_index.
+
+        Idee dahinter (simpel gehalten):
+        - Level 1: 2 Profs laufen frei rum, 2 ECTS random, 1 Pizza
+        - Level 2: 2 Profs, einer startet direkt neben einem ECTS ("bewacht"), 2 ECTS random, 2 Pizza
+        - Level 3: 3 ECTS nahe Ecken fix, pro ECTS ein Prof (spawnt in der Nähe), 3 Pizza
+        - Level 4: 3 ECTS, zwei nah beieinander, Profs kommen sich eher in die Quere, 4 Pizza
+
+        Hinweis:
+        "Radius laufen" machen wir später in enemy.py, erstmal nur Spawn-Logik,
+        damit man die Level-Unterschiede sofort merkt.
         """
 
-        # alles SOLID (zur Sicherheit, falls später was geändert wird)
+        # ----------------------------
+        # 0) Level-Config holen + absichern
+        # ----------------------------
+        if not LEVELS:
+            # falls config kaputt ist, lieber nicht crashen
+            cfg = {"ects": REQUIRED_ECTS, "pizzas": 1, "prof_count": len(PROFESSORS), "guard_mode": False}
+        else:
+            idx = max(0, min(self.level_index, len(LEVELS) - 1))
+            cfg = LEVELS[idx]
+
+        ects_target = int(cfg.get("ects", REQUIRED_ECTS))
+        pizza_target = int(cfg.get("pizzas", 1))
+        prof_target = int(cfg.get("prof_count", len(PROFESSORS)))
+        guard_mode = bool(cfg.get("guard_mode", False))
+
+        # ----------------------------
+        # 1) Tiles resetten (alles SOLID)
+        # ----------------------------
         for x in range(self.cols):
             for y in range(self.rows):
                 self.tiles[x][y].type = TileType.SOLID
 
-        # kleiner Start-Tunnel links oben
+        # kleiner Start-Tunnel, damit man nicht direkt eingesperrt ist
         self.tiles[1][1].dig()
         self.tiles[1][2].dig()
         self.tiles[2][2].dig()
 
-        # ECTS zufällig auf SOLID-Feldern verteilen (nicht auf Startfeld)
+        # ----------------------------
+        # 2) ECTS-Positionen je Level bestimmen
+        # ----------------------------
         ects_positions = set()
-        while len(ects_positions) < self.required_ects:
-            x = random.randrange(self.cols)
-            y = random.randrange(self.rows)
 
-            if (x, y) == (1, 1):
-                continue   # nicht auf Startfeld
+        if self.level_index == 2:  # Level 3 (0-basiert: 0,1,2,3)
+            # 3 ECTS nahe Ecken fix
+            ects_positions = {
+                (1, 1),  # startnah, ist okay (alternativ (1,2))
+                (self.cols - 2, 1),
+                (1, self.rows - 2),
+            }
+            # Startfeld ist (1,1) – wenn du NICHT willst, dass da ein Coin liegt:
+            # ects_positions.discard((1, 1))
+            # ects_positions.add((2, 1))
 
-            if self.tiles[x][y].is_solid:
-                ects_positions.add((x, y))
+        elif self.level_index == 3:  # Level 4
+            # 3 ECTS: 1 Ecke + 2 nah beieinander (Cluster)
+            ects_positions = {
+                (self.cols - 2, 1),  # Ecke
+                (self.cols // 2, self.rows // 2),
+                (self.cols // 2 + 1, self.rows // 2),
+            }
 
-        for (x, y) in ects_positions:
-            self.ects_items.append(ECTS(x, y, self.tile_size))
-        # PowerUps auf einige ECTS-Felder legen
-        kandidaten = list(ects_positions)
-        random.shuffle(kandidaten)
-
-        anzahl = max(1, self.required_ects // 2)  # z.B. Hälfte der Coins bekommt ein PowerUp
-        type_list = list(PowerUpType)            # PIZZA, PARTY, CHATGPT
-
-        for (x, y) in kandidaten[:anzahl]:
-            ptype = random.choice(type_list)
-            self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
-
-        # Professoren erzeugen
-        for prof_info in PROFESSORS:
-            bild_pfad = prof_info["sprite"]     # Bild für den Professor
-            fragen_liste = prof_info["questions"]  # Fragen für diesen Prof
-
-            sprite = Sprite(bild_pfad, self.tile_size, self.tile_size)
-
-            # Prof soll zufällig erscheinen, aber:
-            # - nicht auf Startfeld
-            # - nicht auf einem Feld, wo schon ein anderer Prof steht
-            while True:
+        else:
+            # Level 1 & 2: random SOLID Felder (nicht auf Startfeld)
+            while len(ects_positions) < ects_target:
                 x = random.randrange(self.cols)
                 y = random.randrange(self.rows)
 
                 if (x, y) == (1, 1):
                     continue
+                if self.tiles[x][y].is_solid:
+                    ects_positions.add((x, y))
 
-                kollidiert = False
-                for p in self.professors:
-                    if p.grid_x == x and p.grid_y == y:
-                        kollidiert = True
-                        break
-                if kollidiert:
+        # ECTS-Objekte anlegen
+        for (x, y) in ects_positions:
+            # falls ein ECTS zufällig auf (1,1) landet und du willst es nicht: hier skippen
+            if (x, y) == (1, 1):
+                continue
+            self.ects_items.append(ECTS(x, y, self.tile_size))
+
+        # wichtig fürs Gewinnen: benötigte ECTS setzen (hier = ects_target)
+        self.required_ects = ects_target
+
+        # ----------------------------
+        # 3) PowerUps (nur Pizza) platzieren
+        #    -> du wolltest: Pizza auf SOLID Blöcken, nicht im Tunnel, nicht auf Coins
+        # ----------------------------
+        kandidaten = []
+        for x in range(self.cols):
+            for y in range(self.rows):
+                if (x, y) == (1, 1):
                     continue
+                if (x, y) in ects_positions:
+                    continue
+                if not self.tiles[x][y].is_solid:
+                    continue
+                kandidaten.append((x, y))
 
-                prof = ProfessorEnemy(x, y, self.tile_size, sprite)
-                prof.questions_pool = fragen_liste
-                self.professors.append(prof)
-                break
+        random.shuffle(kandidaten)
+
+        # damit wir nicht über das Ende der Liste laufen, falls wenig Platz ist
+        pizza_target = min(pizza_target, len(kandidaten))
+
+        for (x, y) in kandidaten[:pizza_target]:
+            self.powerups.append(PowerUp(x, y, self.tile_size, PowerUpType.PIZZA))
+
+        # ----------------------------
+        # 4) Professoren erzeugen
+        # ----------------------------
+        self.professors = []
+
+        # nur so viele Profs wie wir auch wirklich in config haben
+        prof_infos = PROFESSORS[:min(prof_target, len(PROFESSORS))]
+
+        # fürs "bewachen": wir nehmen irgendein Coin-Ziel
+        guard_target = None
+        if ects_positions:
+            guard_target = next(iter(ects_positions))
+
+        for i, prof_info in enumerate(prof_infos):
+            bild_pfad = prof_info["sprite"]
+            fragen_liste = prof_info["questions"]
+
+            sprite = Sprite(bild_pfad, self.tile_size, self.tile_size)
+
+            # ---- Spawn-Position bestimmen ----
+            spawn_x, spawn_y = None, None
+
+            # Level 2: erster Prof startet nahe eines ECTS (bewacht es so "gefühlt")
+            if self.level_index == 1 and guard_mode and guard_target is not None and i == 0:
+                gx, gy = guard_target
+                kandidaten_guard = [(gx + 1, gy), (gx - 1, gy), (gx, gy + 1), (gx, gy - 1)]
+                random.shuffle(kandidaten_guard)
+
+                for xx, yy in kandidaten_guard:
+                    if not self.in_bounds(xx, yy):
+                        continue
+                    if (xx, yy) == (1, 1):
+                        continue
+                    # nicht auf anderem Prof
+                    if any(p.grid_x == xx and p.grid_y == yy for p in self.professors):
+                        continue
+                    spawn_x, spawn_y = xx, yy
+                    break
+
+            # Level 3: pro ECTS ein Prof -> wir spawnen die Profs einfach nahe der ECTS
+            if self.level_index == 2:
+                ects_list = list(ects_positions)
+                if i < len(ects_list):
+                    gx, gy = ects_list[i]
+                    kandidaten_guard = [(gx + 1, gy), (gx - 1, gy), (gx, gy + 1), (gx, gy - 1)]
+                    random.shuffle(kandidaten_guard)
+
+                    for xx, yy in kandidaten_guard:
+                        if not self.in_bounds(xx, yy):
+                            continue
+                        if (xx, yy) == (1, 1):
+                            continue
+                        if any(p.grid_x == xx and p.grid_y == yy for p in self.professors):
+                            continue
+                        spawn_x, spawn_y = xx, yy
+                        break
+
+            # falls wir noch keinen Spawn haben, nehmen wir random wie vorher
+            if spawn_x is None:
+                while True:
+                    x = random.randrange(self.cols)
+                    y = random.randrange(self.rows)
+
+                    if (x, y) == (1, 1):
+                        continue
+
+                    if any(p.grid_x == x and p.grid_y == y for p in self.professors):
+                        continue
+
+                    spawn_x, spawn_y = x, y
+                    break
+
+            # ---- Prof erstellen ----
+            prof = ProfessorEnemy(spawn_x, spawn_y, self.tile_size, sprite)
+            prof.questions_pool = fragen_liste  # damit eure Prof-Fragen genutzt werden
+
+            self.professors.append(prof)
 
     def in_bounds(self, x, y):
         # prüft, ob (x,y) noch im Grid liegt
