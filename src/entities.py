@@ -188,3 +188,64 @@ class Student:
         px = offset_x + self.grid_x * self.tile_size
         py = offset_y + self.grid_y * self.tile_size
         screen.blit(self.current_frames[self.frame], (px, py))
+
+
+
+# ==============================================================================
+# GenAI-Kennzeichnung & Reflexion
+# Tool: Google Gemini
+# Verwendungszweck: Syntaktische Umsetzung des Entwurfsmusters "Vererbung".
+# Prompt: "Erstelle eine abstrakte Basisklasse 'Entity' für ein Grid-basiertes Spiel,
+#          die Redundanzen zwischen Spieler- und Gegner-Objekten (Position, Rendering)
+#          eliminiert (DRY-Prinzip) und Polymorphie beim Zeichnen ermöglicht."
+# ==============================================================================
+# BASISKLASSE: ENTITY (Wird an Enemy vererbt)
+# Author/Verantwortlich: Aaron Lehrke (937367)
+# ==============================================================================
+# Diese Klasse fungiert als zentraler Baustein (Parent Class) für alle beweglichen
+# Objekte im Spiel (Gegner, Projektile, etc.).
+# Ziel: Reduzierung von Code-Duplizierung. Anstatt dass jeder Gegnertyp eigene
+# x/y-Variablen verwaltet, erben sie diese Funktionalität zentral von hier.
+class Entity:
+    def __init__(self, grid_x: int, grid_y: int, tile_size: int, sprite):
+        """
+        Initialisiert ein generisches Objekt auf dem Spielfeld.
+        
+        Args:
+            grid_x, grid_y: Logische Koordinaten im Raster (nicht Pixel!).
+            tile_size: Größe einer Kachel in Pixeln (für die Umrechnung).
+            sprite: Das visuelle Objekt. Das kann entweder ein einfaches 
+                    pygame.Surface sein oder eine komplexe Instanz aus graphics.py.
+        """
+        self.grid_x = grid_x
+        self.grid_y = grid_y
+        self.tile_size = tile_size
+        self.sprite = sprite
+
+    @property
+    def pos(self) -> tuple[int, int]:
+        """
+        Getter-Methode (Property), die den direkten Zugriff auf die Koordinaten
+        kapselt. Gibt die Position als Tupel (x, y) zurück, was für
+        Kollisionsabfragen im Level-Management benötigt wird.
+        """
+        return self.grid_x, self.grid_y
+
+    def draw(self, screen, offset_x, offset_y):
+        """
+        Zentrale Rendering-Logik (View-Ebene).
+        Wandelt die abstrakten Grid-Koordinaten in konkrete Pixel-Koordinaten um
+        und bringt das Objekt auf den Bildschirm.
+        """
+        # Umrechnung: Logische Position * Kachelgröße + Verschiebung (Camera Offset)
+        px = offset_x + self.grid_x * self.tile_size
+        py = offset_y + self.grid_y * self.tile_size
+
+        # WICHTIG: Polymorphie-Check (Duck Typing)
+        # Wir prüfen hier dynamisch zur Laufzeit, welche Art von Grafik-Objekt wir haben.
+        # Fall A: Es ist eine komplexe Klasse aus 'graphics.py' (hat eine .draw()-Methode).
+        if hasattr(self.sprite, "draw"):
+            self.sprite.draw(screen, px, py)
+        # Fall B: Es ist ein einfaches Pygame-Bild (Surface).
+        else:
+            screen.blit(self.sprite, (px, py))
