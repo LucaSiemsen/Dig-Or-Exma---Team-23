@@ -9,8 +9,8 @@ from src.questions import questions as raw_questions_data
 
 #Spielfeld-Konfiguration 
 
-GRID_COLS = 10          #wie viele Kacheln breit
-GRID_ROWS = 10          #wie viele Kacheln hoch
+GRID_COLS = 15         #wie viele Kacheln breit
+GRID_ROWS = 9          #wie viele Kacheln hoch
 
 #Abstand zum Bildschirmrand (in Kacheln), damit alles zentriert ist
 GRID_MARGIN_X_TILES = 2
