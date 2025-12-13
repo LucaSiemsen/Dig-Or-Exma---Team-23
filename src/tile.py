@@ -20,42 +20,32 @@ from enum import Enum, auto
 # Wir nutzen eine Enumeration (Enum) statt einfacher Zahlen (0, 1), 
 # um den Code lesbarer und wartbarer zu machen.
 class TileType(Enum):
-    SOLID = auto()  # Blockierend (z.B. Bücherstapel, Erde)
+    SOLID = auto()  # Blockierend (Stein oder etwas mauerartiges)
     EMPTY = auto()  # Begehbar (Tunnel, Boden)
+    GRASS = auto()  # Oberste Reihe mit Blöcken, die oberhalb Grass auf dem Sprite haben
 
 
 # ==============================================================================
 # TILE KLASSE (Datenstruktur)
 # ==============================================================================
 # Diese Klasse repräsentiert ein einzelnes Quadrat auf dem Spielfeld.
-# Sie kapselt den Zustand (Blockiert vs. Frei) und die Logik für Veränderungen.
+# Sie zeigt den Zustand (Blockiert vs. Frei) und die Logik für Veränderungen.
 class Tile:
     def __init__(self, ttype: TileType):
-        """
-        Initialisiert das Feld.
-        Args:
-            ttype: Der Typ des Feldes (TileType.SOLID oder TileType.EMPTY).
-        """
         self.type = ttype
 
     @property
     def is_solid(self) -> bool:
         """
-        Getter-Property: Prüft, ob das Feld ein Hindernis ist.
-        WICHTIG: Wird von level.py für die Kollisionsabfrage benötigt!
+        Gras ist auch fest! Deshalb geben wir True zurück,
+        wenn es SOLID *oder* GRASS ist.
         """
-        return self.type == TileType.SOLID
+        return self.type == TileType.SOLID or self.type == TileType.GRASS
 
     @property
     def is_empty(self) -> bool:
-        """
-        Getter-Property: Prüft, ob das Feld begehbar ist.
-        """
         return self.type == TileType.EMPTY
 
     def dig(self) -> None:
-        """
-        Zustandsübergang: Verwandelt ein festes Feld (SOLID) in einen Tunnel (EMPTY).
-        Wird aufgerufen, wenn der Student gegen ein grabbares Hindernis läuft.
-        """
+        """Egal ob Gras oder Erde: Nach dem Graben ist es leer."""
         self.type = TileType.EMPTY
