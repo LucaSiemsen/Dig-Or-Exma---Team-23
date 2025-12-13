@@ -96,14 +96,44 @@ class Game:
         self.grid_offset_x = (self.width - GRID_COLS * self.tile_size) // 2
         self.grid_offset_y = (self.height - GRID_ROWS * self.tile_size) // 2
 
-        # Hintergrund laden
+                # Hintergrund laden
         try:
-            bg = pygame.image.load("assets/sprites/background.png").convert()
+            bg = pygame.image.load("assets/sprites/Gamepad_Hintergrund.png").convert()
             self.background = pygame.transform.scale(bg, (self.width, self.height))
         except:
-            # Notfall-Lösung, wenn der Hintergrund fehlt
             self.background = pygame.Surface((self.width, self.height))
             self.background.fill((20, 20, 30))
+
+        # ----------------------------------------------------------
+        # Spielfeld-Kasten aus der UI-Grafik berechnen
+        # (Original-UI: 320x240)
+        # ----------------------------------------------------------
+        UI_W, UI_H = 320, 240
+        sx = self.width / UI_W
+        sy = self.height / UI_H
+
+        # Weißer Kasten im Originalbild (manuell gemessen)
+        BOX_X, BOX_Y = 40, 40
+        BOX_W, BOX_H = 240, 120
+
+        self.board_rect = pygame.Rect(
+            int(BOX_X * sx),
+            int(BOX_Y * sy),
+            int(BOX_W * sx),
+            int(BOX_H * sy),
+        )
+
+        # Tilegröße so berechnen, dass das Grid reinpasst
+        self.tile_size = min(
+            self.board_rect.w // GRID_COLS,
+            self.board_rect.h // GRID_ROWS
+        )
+
+        # Grid innerhalb des Kastens zentrieren
+        grid_w = GRID_COLS * self.tile_size
+        grid_h = GRID_ROWS * self.tile_size
+        self.grid_offset_x = self.board_rect.x + (self.board_rect.w - grid_w) // 2
+        self.grid_offset_y = self.board_rect.y + (self.board_rect.h - grid_h) // 2
 
         # Boden, Tunnelblöcke sowie nun auch Blöcke für die oberste Reihe
         self.block_solid = Sprite("assets/sprites/block.png",
