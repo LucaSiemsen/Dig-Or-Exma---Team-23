@@ -32,11 +32,11 @@ try:
     from src.config import (
         GRID_COLS, GRID_ROWS,
         GRID_MARGIN_X_TILES, GRID_MARGIN_Y_TILES,
-        REQUIRED_ECTS,
+        REQUIRED_ECTS
     )
 except ImportError:
-    GRID_COLS = 12
-    GRID_ROWS = 8
+    GRID_COLS = 15
+    GRID_ROWS = 9
     GRID_MARGIN_X_TILES = 2
     GRID_MARGIN_Y_TILES = 2
     REQUIRED_ECTS = 5
@@ -58,6 +58,7 @@ except ImportError:
 from src.entities import Student
 from src.level import Level
 from src.tile import TileType
+from src.anim_scene_builder import Animator_Scenes
 
 
 # ------------------------------------------------------------------------------
@@ -98,8 +99,25 @@ class Game:
 
                 # Hintergrund laden
         try:
-            bg = pygame.image.load("assets/sprites/Gamepad_Hintergrund.png").convert()
-            self.background = pygame.transform.scale(bg, (self.width, self.height))
+            bg = pygame.image.load("assets/sprites/Gamepad.png").convert_alpha()
+            
+            #ratio bild abfrage
+            bg_w, bg_h=bg.get_size()
+            bg_ratio=bg_w/bg_h
+            #ratio screen abfrage
+            screen_w, screen_h=self.screen.get_size()
+            screen_ratio=screen_w/screen_h
+            if screen_ratio>bg_ratio:
+                new_h=screen_h
+                new_w=int(screen_h*bg_ratio)
+            else:
+                new_w=screen_w
+                new_h=int(screen_w/bg_ratio)
+            background_scaled = pygame.transform.scale(bg, (new_w,new_h))
+            self.background_rect=background_scaled.get_rect(center=self.screen.get_rect().center)
+            self.background=background_scaled
+
+        
         except:
             self.background = pygame.Surface((self.width, self.height))
             self.background.fill((20, 20, 30))
@@ -107,18 +125,23 @@ class Game:
         # ----------------------------------------------------------
         # Spielfeld-Kasten aus der UI-Grafik berechnen
         # (Original-UI: 320x240)
+        #hier wird Mitte berechnet
         # ----------------------------------------------------------
-        UI_W, UI_H = 320, 240
-        sx = self.width / UI_W
-        sy = self.height / UI_H
+        UI_W, UI_H = 320, 180
+        #sx und sy sind nicht mehr abhängig vom screen sondern
+        #vom background
+        sx = self.background_rect.width / UI_W
+        sy = self.background_rect.height / UI_H
 
         # Weißer Kasten im Originalbild (manuell gemessen)
-        BOX_X, BOX_Y = 40, 40
-        BOX_W, BOX_H = 240, 120
+        BOX_X, BOX_Y = 80, 44
+        BOX_W, BOX_H = 160, 96
 
+        #Abgängikeit vom Background und dem Abstand vom Rand
+        #als Einstiegsecke oben links im "Gamepadbildschirm"
         self.board_rect = pygame.Rect(
-            int(BOX_X * sx),
-            int(BOX_Y * sy),
+            int(self.background_rect.left + BOX_X * sx),
+            int(self.background_rect.top +BOX_Y * sy),
             int(BOX_W * sx),
             int(BOX_H * sy),
         )
@@ -182,6 +205,10 @@ class Game:
             self.font_small, self.sound_manager
         )
 
+        #Animationsobjekte deklarieren 
+        self.game_over_animation=Animator_Scenes(self.screen.get_width(),self.screen.get_height(),
+                                                 250,1)
+        self.animationslist=self.game_over_animation.load_from_spritesheet("assets\sprites\GAME OVER Scene.png",315,180,self.background)
     # ------------------------------------------------------------------------------
     # Neues Level erstellen + Student spawnen
     # ------------------------------------------------------------------------------
@@ -206,6 +233,8 @@ class Game:
     def restart(self):
         self._create_level_and_student()
         self.state = GameState.RUNNING
+        self.game_over_animation.start()
+
         self.last_question_feedback = None
         self.mistakes = 0
 
@@ -420,7 +449,7 @@ class Game:
     # Rendering
     # ------------------------------------------------------------------------------
     def draw(self):
-        self.screen.blit(self.background, (0, 0))
+        self.screen.blit(self.background, self.background_rect)
 
         if self.state == GameState.MENU:
             self.draw_menu()
@@ -502,13 +531,14 @@ class Game:
             self.draw_question_overlay()
 
         elif self.state == GameState.GAME_OVER:
-            self.draw_center_message(
-                "Game Over",
-                self.level.game_over_reason,
-                "R: Neustart   |   ENTER: Menü",
-                (255, 120, 120)
-            )
-
+            self.game_over_animation.draw(self.screen, self.background_rect)
+            if (self.game_over_animation.update() == False):
+                self.draw_center_message(
+                    "Game Over",
+                    self.level.game_over_reason,
+                    "R: Neustart   |   ENTER: Menü",
+                    (255, 120, 120)
+                )
         elif self.state == GameState.LEVEL_COMPLETE:
             self.draw_center_message(
                 "Level geschafft!",

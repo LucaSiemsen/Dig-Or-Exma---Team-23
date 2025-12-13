@@ -7,9 +7,9 @@
 from dataclasses import dataclass
 
 #Spielfeld-Konfiguration 
-
-GRID_COLS = 10          #wie viele Kacheln breit
-GRID_ROWS = 10          #wie viele Kacheln hoch
+#Das Verhältnis Muss! 5:3 sein
+GRID_COLS = 15        #wie viele Kacheln breit
+GRID_ROWS = 9        #wie viele Kacheln hoch
 
 #Abstand zum Bildschirmrand (in Kacheln), damit alles zentriert ist
 GRID_MARGIN_X_TILES = 2
