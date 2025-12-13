@@ -1,14 +1,12 @@
-#pausemenu.py
 import pygame
 from .ui import VolumeSlider
-
 class PauseMenu:
     def __init__(self, width: int, height: int, font_title: pygame.font.Font, font_small: pygame.font.Font, sound_manager):
         self.width = width
         self.height = height
         self.font_title = font_title
         self.font_small = font_small
-        self.sound_manager = sound_manager #Referenz auf SoundManager (für Lautstärke)
+        self.sound_manager = sound_manager 
         self.overlay = pygame.Surface((self.width, self.height))
         self.overlay.set_alpha(180)
         self.overlay.fill((0, 0, 0))
@@ -33,10 +31,10 @@ class PauseMenu:
         if self.volume_slider.handle_click(pos):
             return None
         if self.button_resume.collidepoint(pos):
-            return "resume" #Signal an Game: Spiel fortsetzen (Code dazu in Game.py)
+            return "resume" 
         if self.button_menu.collidepoint(pos):
-            return "menu" #Signal an Game: zurück ins Hauptmenü
-        return None #Klick war auf nichts relevantes
+            return "menu" 
+        return None 
 
     #zeichnet das komplette Pause-Menü
     def draw(self, screen: pygame.Surface) -> None:
