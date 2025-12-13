@@ -12,6 +12,7 @@ import pygame
 from src.graphics import Sprite
 from src.enemy import ProfessorEnemy
 from src.powerups import PowerUp, PowerUpType
+from src.tile import Tile, TileType
 
 # versucht, die Werte aus config zu holen
 try:
@@ -64,32 +65,6 @@ except ImportError:
 
         def draw(self, screen, x, y):
             screen.blit(self.surface, (x, y))
-
-
-class TileType:
-    # einfache "Enum" für Tile-Arten
-    SOLID = 0   # Erde / Block
-    EMPTY = 1   # Tunnel
-
-
-class Tile:
-    # Repräsentiert ein einzelnes Feld im Grid
-    def __init__(self, tile_type):
-        self.type = tile_type   # speichert, ob SOLID oder EMPTY
-
-    @property
-    def is_solid(self):
-        # True, wenn Block / Erde
-        return self.type == TileType.SOLID
-
-    @property
-    def is_empty(self):
-        # True, wenn Tunnel
-        return self.type == TileType.EMPTY
-
-    def dig(self):
-        # macht aus einem Block einen Tunnel
-        self.type = TileType.EMPTY
 
 
 class ECTS:
@@ -215,11 +190,16 @@ class Level:
         guard_mode = bool(cfg.get("guard_mode", False))
 
         # ----------------------------
-        # 1) Tiles resetten (alles SOLID)
+        # 1) Tiles resetten (Gras oben, Erde unten)
         # ----------------------------
         for x in range(self.cols):
             for y in range(self.rows):
-                self.tiles[x][y].type = TileType.SOLID
+                if y == 0:
+                    # Oberste Reihe ist Gras
+                    self.tiles[x][y] = Tile(TileType.GRASS)
+                else:
+                    # Alles darunter ist Erde
+                    self.tiles[x][y] = Tile(TileType.SOLID)
 
         # kleiner Start-Tunnel, damit man nicht direkt eingesperrt ist
         self.tiles[1][1].dig()
