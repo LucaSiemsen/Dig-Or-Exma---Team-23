@@ -271,8 +271,13 @@ class Level:
         # damit wir nicht über das Ende der Liste laufen, falls wenig Platz ist
         pizza_target = min(pizza_target, len(kandidaten))
 
+        # --- UPDATE: Zufällige PowerUps (Pizza, Party, ChatGPT) ---
+        types = [PowerUpType.PIZZA, PowerUpType.PARTY, PowerUpType.CHATGPT]
+
         for (x, y) in kandidaten[:pizza_target]:
-            self.powerups.append(PowerUp(x, y, self.tile_size, PowerUpType.PIZZA))
+            # Wähle zufällig einen Typ aus der Liste
+            ptype = random.choice(types)
+            self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
 
         # ----------------------------
         # 4) Professoren erzeugen
