@@ -94,6 +94,28 @@ QUESTIONS_BY_PROF: dict[str, list[Question]] = {
             explanation="Ein Port identifiziert einen logischen Endpunkt auf einem Rechner (z.B. 80 für HTTP).",
         ),
     ],
+"K": [
+        Question(
+            text="Welches Protokoll wird typischerweise für Webseiten verwendet?",
+            answers=["HTTP", "FTP", "SMTP"],
+            correct=0,
+            explanation="HTTP (oder HTTPS) ist die Basis für den Austausch von Webseiten.",
+        ),
+        Question(
+            text="Was ist ein Port in der Netzwerktechnik?",
+            answers=[
+                "Ein physisches LAN-Kabel",
+                "Eine logische Endpunktnummer für Verbindungen",
+                "Die Geschwindigkeit einer Verbindung",
+            ],
+            correct=1,
+            explanation="Ein Port identifiziert einen logischen Endpunkt auf einem Rechner (z.B. 80 für HTTP).",
+        ),
+    ],
+
+
+
+
 }
 
 
@@ -128,18 +150,31 @@ PROFESSORS = [
         "sprite": "assets/sprites/prof_net.png",
         "questions": QUESTIONS_BY_PROF["net"],
     },
+    {
+        "id": 3,
+        "type": "K",                             #muss zu QUESTIONS_BY_PROF["K"] passen
+        "name": "Klausur",
+        "sprite": "assets/sprites/Prüfung 1.png",
+        "questions": QUESTIONS_BY_PROF["K"],
+        "hp" :3 #Klausur hat 3 Fragen
+    },
 ]
 
 LEVELS = [
-    # Level 1: 2 Professoren frei, 2 ECTS, 1 Pizza
-    {"ects": 2, "pizzas": 1, "prof_count": 2, "guard_mode": False},
-
-    # Level 2: 2 Professoren, einer “bewacht” ein ECTS, 2 ECTS, 2 Pizzen
-    {"ects": 2, "pizzas": 2, "prof_count": 2, "guard_mode": True},
-
-    # Level 3 (später): 3 ECTS nahe Ecken, Radius-Logik
-    {"ects": 3, "pizzas": 3, "prof_count": 3, "guard_mode": False},
-
-    # Level 4 (später): 3 ECTS, 2 nahe beieinander, mehr Pizzen
-    {"ects": 3, "pizzas": 4, "prof_count": 3, "guard_mode": False},
+    # Semester 1
+    {"ects": 2, "powerups_total": 1, "prof_count": 2, "guard_mode": False, "hard_prof": False},
+    # Semester 2
+    {"ects": 2, "powerups_total": 1, "prof_count": 2, "guard_mode": True,  "hard_prof": False},
+    # Semester 3
+    {"ects": 3, "powerups_total": 2, "prof_count": 3, "guard_mode": False, "hard_prof": True},
+    # Semester 4
+    {"ects": 3, "powerups_total": 2, "prof_count": 3, "guard_mode": True,  "hard_prof": True},
+    # Semester 5
+    {"ects": 4, "powerups_total": 3, "prof_count": 4, "guard_mode": False, "hard_prof": True},
+    # Semester 6
+    {"ects": 4, "powerups_total": 3, "prof_count": 4, "guard_mode": True,  "hard_prof": True},
+    # Semester 7
+    {"ects": 5, "powerups_total": 4, "prof_count": 5, "guard_mode": True,  "hard_prof": True},
 ]
+
+

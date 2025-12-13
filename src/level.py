@@ -252,9 +252,13 @@ class Level:
         self.required_ects = ects_target
 
         # ----------------------------
-        # 3) PowerUps (nur Pizza) platzieren
-        #    -> du wolltest: Pizza auf SOLID Blöcken, nicht im Tunnel, nicht auf Coins
+        # 3) PowerUps platzieren (alle Typen)
         # ----------------------------
+        # Kandidaten = Felder, auf denen ein PowerUp liegen darf.
+        # Regeln:
+        # - nicht auf Startfeld
+        # - nicht auf einem Coin
+        # - nur auf SOLID (also auf "Erde", nicht im Tunnel)
         kandidaten = []
         for x in range(self.cols):
             for y in range(self.rows):
@@ -264,19 +268,18 @@ class Level:
                     continue
                 if not self.tiles[x][y].is_solid:
                     continue
+                # optional: keine PowerUps auf Gras
+                # (falls GRASS nicht solid ist, brauchst du das nicht)
                 kandidaten.append((x, y))
 
         random.shuffle(kandidaten)
 
-        # damit wir nicht über das Ende der Liste laufen, falls wenig Platz ist
-        pizza_target = min(pizza_target, len(kandidaten))
+        # wie viele PowerUps dieses Level bekommt
+        powerups_total = int(cfg.get("powerups_total", max(1, self.required_ects // 2)))
 
-        # --- UPDATE: Zufällige PowerUps (Pizza, Party, ChatGPT) ---
-        types = [PowerUpType.PIZZA, PowerUpType.PARTY, PowerUpType.CHATGPT]
-
-        for (x, y) in kandidaten[:pizza_target]:
-            # Wähle zufällig einen Typ aus der Liste
-            ptype = random.choice(types)
+        type_list = list(PowerUpType)  # PIZZA, PARTY, CHATGPT
+        for (x, y) in kandidaten[:powerups_total]:
+            ptype = random.choice(type_list)
             self.powerups.append(PowerUp(x, y, self.tile_size, ptype))
 
         # ----------------------------
@@ -284,8 +287,21 @@ class Level:
         # ----------------------------
         self.professors = []
 
-        # nur so viele Profs wie wir auch wirklich in config haben
-        prof_infos = PROFESSORS[:min(prof_target, len(PROFESSORS))]
+        # --- NEU (3c): Professoren filtern ---
+        # schwere Professoren (hp >= 3) erst ab Semester 3 (level_index >= 2)
+        prof_infos = []
+
+        for prof_info in PROFESSORS:
+            prof_hp = int(prof_info.get("hp", 1))
+
+            # Schwerer Prof (z.B. Prüfung 1) erst ab Semester 3
+            if prof_hp >= 3 and self.level_index < 2:
+                continue
+
+            prof_infos.append(prof_info)
+
+        # auf gewünschte Anzahl begrenzen
+        prof_infos = prof_infos[:min(prof_target, len(prof_infos))]
 
         # fürs "bewachen": wir nehmen irgendein Coin-Ziel
         guard_target = None
@@ -353,7 +369,12 @@ class Level:
 
             # ---- Prof erstellen ----
             prof = ProfessorEnemy(spawn_x, spawn_y, self.tile_size, sprite)
-            prof.questions_pool = fragen_liste  # damit eure Prof-Fragen genutzt werden
+            prof.questions_pool = fragen_liste  # damit Prof-Fragen genutzt werden
+
+            # --- NEU: falls dieser Prof hp im config hat, übernehmen ---
+            if "hp" in prof_info:
+                prof.hp = int(prof_info["hp"])
+                prof.max_hp = int(prof_info["hp"])
 
             self.professors.append(prof)
 
