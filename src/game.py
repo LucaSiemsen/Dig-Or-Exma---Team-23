@@ -2,11 +2,9 @@
 # Hauptsteuerung fürs Spiel: GameLoop, States, Rendering, Frage-Logik
 
 from __future__ import annotations
-
 import sys
 from enum import Enum, auto
 import pygame
-
 from .pausemenu import PauseMenu
 from .sound import SoundManager
 from .HUD import Mutebutton
@@ -416,8 +414,24 @@ class Game:
         # Richtige Antwort
         if given_index == q.correct:
             self.level.collected_ects += 1
-            self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation
-            self.level.remove_professor(prof)
+
+            # --- NEU: Klausur/Hard-Prof braucht mehrere richtige Antworten ---
+            if prof is not None and hasattr(prof, "hp"):
+                prof.hp -= 1
+
+                if prof.hp <= 0:
+                    self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation + " (Prof besiegt!)"
+                    self.level.remove_professor(prof)
+                else:
+                    self.last_question_feedback = (
+                        "Richtige Antwort! +1 ECTS. " + q.explanation +
+                        f" (Noch {prof.hp} richtige Antwort(en) bis besiegt.)"
+                    )
+            else:
+                # Fallback: falls prof kein hp hat
+                self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation
+                self.level.remove_professor(prof)
+
 
         # Falsche Antwort
         else:

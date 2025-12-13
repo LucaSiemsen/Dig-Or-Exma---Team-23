@@ -149,7 +149,7 @@ questions = {
         "correct": 0 # Verweist auf "SAP"
     },
     14: {
-        "prof_name": "Prof. Data",
+        "prof_name": "Klausur",
         "question": "Was vermeidet man durch Normalisierung?",
         "answers": [
             "Redundanz",                   # Index 0 (Korrekt)
@@ -160,7 +160,7 @@ questions = {
         "correct": 0 # Verweist auf "Doppelte Datenhaltung"
     },
     15: {
-        "prof_name": "Dr. Excel",
+        "prof_name": "Klausur",
         "question": "Was ist CSV?",
         "answers": [
             "Ein Video",                   # Index 0
@@ -173,7 +173,7 @@ questions = {
 
     # --- Prozessmanagement (BPM) ---
     16: {
-        "prof_name": "Prof. Kette",
+        "prof_name": "Klausur",
         "question": "Was ist eine EPK?",
         "answers": [
             "Eine Krankheit",              # Index 0
