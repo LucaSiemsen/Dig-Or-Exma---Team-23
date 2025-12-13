@@ -2,11 +2,9 @@
 # Hauptsteuerung fürs Spiel: GameLoop, States, Rendering, Frage-Logik
 
 from __future__ import annotations
-
 import sys
 from enum import Enum, auto
 import pygame
-
 from .pausemenu import PauseMenu
 from .sound import SoundManager
 from .HUD import Mutebutton
@@ -33,10 +31,11 @@ try:
         GRID_COLS, GRID_ROWS,
         GRID_MARGIN_X_TILES, GRID_MARGIN_Y_TILES,
         REQUIRED_ECTS,
+        LEVELS
     )
 except ImportError:
-    GRID_COLS = 12
-    GRID_ROWS = 8
+    GRID_COLS = 15
+    GRID_ROWS = 9
     GRID_MARGIN_X_TILES = 2
     GRID_MARGIN_Y_TILES = 2
     REQUIRED_ECTS = 5
@@ -58,6 +57,7 @@ except ImportError:
 from src.entities import Student
 from src.level import Level
 from src.tile import TileType
+from src.anim_scene_builder import Animator_Scenes
 
 
 # ------------------------------------------------------------------------------
@@ -98,8 +98,25 @@ class Game:
 
                 # Hintergrund laden
         try:
-            bg = pygame.image.load("assets/sprites/Gamepad_Hintergrund.png").convert()
-            self.background = pygame.transform.scale(bg, (self.width, self.height))
+            bg = pygame.image.load("assets/sprites/Gamepad.png").convert_alpha()
+            
+            #ratio bild abfrage
+            bg_w, bg_h=bg.get_size()
+            bg_ratio=bg_w/bg_h
+            #ratio screen abfrage
+            screen_w, screen_h=self.screen.get_size()
+            screen_ratio=screen_w/screen_h
+            if screen_ratio>bg_ratio:
+                new_h=screen_h
+                new_w=int(screen_h*bg_ratio)
+            else:
+                new_w=screen_w
+                new_h=int(screen_w/bg_ratio)
+            background_scaled = pygame.transform.scale(bg, (new_w,new_h))
+            self.background_rect=background_scaled.get_rect(center=self.screen.get_rect().center)
+            self.background=background_scaled
+
+        
         except:
             self.background = pygame.Surface((self.width, self.height))
             self.background.fill((20, 20, 30))
@@ -107,18 +124,23 @@ class Game:
         # ----------------------------------------------------------
         # Spielfeld-Kasten aus der UI-Grafik berechnen
         # (Original-UI: 320x240)
+        #hier wird Mitte berechnet
         # ----------------------------------------------------------
-        UI_W, UI_H = 320, 240
-        sx = self.width / UI_W
-        sy = self.height / UI_H
+        UI_W, UI_H = 320, 180
+        #sx und sy sind nicht mehr abhängig vom screen sondern
+        #vom background
+        sx = self.background_rect.width / UI_W
+        sy = self.background_rect.height / UI_H
 
         # Weißer Kasten im Originalbild (manuell gemessen)
-        BOX_X, BOX_Y = 40, 40
-        BOX_W, BOX_H = 240, 120
+        BOX_X, BOX_Y = 80, 44
+        BOX_W, BOX_H = 160, 96
 
+        #Abgängikeit vom Background und dem Abstand vom Rand
+        #als Einstiegsecke oben links im "Gamepadbildschirm"
         self.board_rect = pygame.Rect(
-            int(BOX_X * sx),
-            int(BOX_Y * sy),
+            int(self.background_rect.left + BOX_X * sx),
+            int(self.background_rect.top +BOX_Y * sy),
             int(BOX_W * sx),
             int(BOX_H * sy),
         )
@@ -174,6 +196,7 @@ class Game:
         self.mistakes = 0   # Spieler darf 2 Fehler machen
 
         # Level & Student erstellen
+        self.current_level_index = 0
         self._create_level_and_student()
 
         # Pause-Menü vorbereiten
@@ -181,12 +204,23 @@ class Game:
             self.width, self.height, self.font_title,
             self.font_small, self.sound_manager
         )
+        # --------------------------------------------------
+        # Automatischer Level-Übergang (Semester-Wechsel)
+        # --------------------------------------------------
+        self.current_level_index = 0     # Start bei Semester 1
+        self.level_complete_timer = 0.0  # zählt Zeit nach Levelende
+        self.LEVEL_COMPLETE_DELAY = 2.0  # Sekunden bis nächstes Semester
 
+
+        #Animationsobjekte deklarieren 
+        self.game_over_animation=Animator_Scenes(self.screen.get_width(),self.screen.get_height(),
+                                                 250,1)
+        self.animationslist=self.game_over_animation.load_from_spritesheet("assets\sprites\GAME OVER Scene.png",315,180,self.background)
     # ------------------------------------------------------------------------------
     # Neues Level erstellen + Student spawnen
     # ------------------------------------------------------------------------------
     def _create_level_and_student(self):
-        self.level = Level(self.tile_size, level_index=0)
+        self.level = Level(self.tile_size, level_index=self.current_level_index)
 
         # Startkoordinaten – momentan fest, könnte man später zufällig machen
         start_x, start_y = 1, 1
@@ -206,6 +240,8 @@ class Game:
     def restart(self):
         self._create_level_and_student()
         self.state = GameState.RUNNING
+        self.game_over_animation.start()
+
         self.last_question_feedback = None
         self.mistakes = 0
         self.sound_manager.gameover_sound.stop()
@@ -309,11 +345,38 @@ class Game:
                 self.resolve_question(answer_index)
             return
 
-        # GameOver/LevelComplete
-        if key == pygame.K_r:
-            self.restart()
-        elif key in (pygame.K_SPACE, pygame.K_RETURN):
-            self.state = GameState.MENU
+        # -----------------------------
+        # GameOver / LevelComplete
+        # -----------------------------
+        if self.state == GameState.LEVEL_COMPLETE:
+            # N = nächstes Semester/Level starten
+            if key == pygame.K_n:
+                self._go_to_next_level()
+                return
+
+            # R = aktuelles Semester neu starten
+            if key == pygame.K_r:
+                self.restart()
+                return
+
+            # ESC oder ENTER optional: zurück ins Menü
+            if key in (pygame.K_ESCAPE, pygame.K_RETURN):
+                self.state = GameState.MENU
+                return
+
+
+        if self.state == GameState.GAME_OVER:
+            # R = Neustart
+            if key == pygame.K_r:
+                self.restart()
+                return
+
+            # ENTER/ESC = Menü
+            if key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                self.state = GameState.MENU
+                return
+
+
 
     # ------------------------------------------------------------------------------
     # Klick auf Buttons
@@ -383,9 +446,25 @@ class Game:
 
         # Richtige Antwort
         if given_index == q.correct:
-            self.level.collected_ects += 2
-            self.last_question_feedback = "Richtige Antwort! +2 ECTS. " + q.explanation
-            self.level.remove_professor(prof)
+            self.level.collected_ects += 1
+
+            # --- NEU: Klausur/Hard-Prof braucht mehrere richtige Antworten ---
+            if prof is not None and hasattr(prof, "hp"):
+                prof.hp -= 1
+
+                if prof.hp <= 0:
+                    self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation + " (Prof besiegt!)"
+                    self.level.remove_professor(prof)
+                else:
+                    self.last_question_feedback = (
+                        "Richtige Antwort! +1 ECTS. " + q.explanation +
+                        f" (Noch {prof.hp} richtige Antwort(en) bis besiegt.)"
+                    )
+            else:
+                # Fallback: falls prof kein hp hat
+                self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation
+                self.level.remove_professor(prof)
+
 
         # Falsche Antwort
         else:
@@ -423,7 +502,7 @@ class Game:
     # Rendering
     # ------------------------------------------------------------------------------
     def draw(self):
-        self.screen.blit(self.background, (0, 0))
+        self.screen.blit(self.background, self.background_rect)
 
         if self.state == GameState.MENU:
             self.draw_menu()
@@ -505,38 +584,49 @@ class Game:
             self.draw_question_overlay()
 
         elif self.state == GameState.GAME_OVER:
-            self.draw_center_message(
-                "Game Over",
-                self.level.game_over_reason,
-                "R: Neustart   |   ENTER: Menü",
-                (255, 120, 120)
-            )
-
+            self.game_over_animation.draw(self.screen, self.background_rect)
+            if (self.game_over_animation.update() == False):
+                self.draw_center_message(
+                    "Game Over",
+                    self.level.game_over_reason,
+                    "R: Neustart   |   ENTER: Menü",
+                    (255, 120, 120)
+                )
         elif self.state == GameState.LEVEL_COMPLETE:
             self.draw_center_message(
-                "Level geschafft!",
+                "Semester geschafft!",
                 "Du hast genug ECTS gesammelt!",
-                "R: Neustart   |   ENTER: Menü",
+                "R: Neustart   |   ENTER: Menü    N: Nächstes Semester",
                 (120, 255, 120)
             )
 
-    # ------------------------------------------------------------------------------
-    # HUD (Zeit, ECTS, Feedback)
+   # ------------------------------------------------------------------------------
+    # HUD (Zeit, ECTS, Semester, Controls, Feedback)
     # ------------------------------------------------------------------------------
     def draw_hud(self):
-        hud = self.font_small.render(
+        # 1) Erste HUD-Zeile: Zeit + ECTS
+        hud_line1 = self.font_small.render(
             f"Zeit: {int(self.level.timer.time_left)}s   "
-            f"ECTS: {self.level.collected_ects}/{REQUIRED_ECTS}",
+            f"ECTS: {self.level.collected_ects}/{self.level.required_ects}",
             True, (255, 255, 255)
         )
-        self.screen.blit(hud, (20, 20))
+        self.screen.blit(hud_line1, (20, 20))
 
+        # 2) Zweite HUD-Zeile: Semester (aka Level)
+        hud_line2 = self.font_small.render(
+            f"Semester: {self.current_level_index + 1}/7",
+            True, (255, 255, 255)
+        )
+        self.screen.blit(hud_line2, (20, 45))  # bisschen unter die erste Zeile
+
+        # 3) Controls (eine Zeile tiefer)
         controls = self.font_small.render(
             "Pfeiltasten: bewegen/graben   |   SHIFT: Pause   |   R: Neustart",
             True, (255, 255, 255)
         )
-        self.screen.blit(controls, (20, 50))
+        self.screen.blit(controls, (20, 70))
 
+        # 4) Feedback unten (z.B. nach Fragen)
         if self.last_question_feedback:
             msg = self.font_small.render(
                 self.last_question_feedback,
@@ -544,8 +634,10 @@ class Game:
             )
             self.screen.blit(msg, (20, self.height - 40))
 
+        # 5) Buttons / UI
         self.mute_button.draw(self.screen)
         draw_buff_timer_top_right(self.screen, self.font_small, self.student)
+
     # ------------------------------------------------------------------------------
     # Frage-Overlay
     # ------------------------------------------------------------------------------
@@ -581,6 +673,28 @@ class Game:
         self.screen.blit(surf_line1, surf_line1.get_rect(center=(cx, cy)))
         self.screen.blit(surf_line2, surf_line2.get_rect(center=(cx, cy + 30)))
 
+    # ------------------------------------------------------------------------------
+    # Nächstes Level Funktion:
+    # ------------------------------------------------------------------------------
+    def _go_to_next_level(self):
+        self.current_level_index += 1
+
+        # wenn es kein weiteres Level gibt -> zurück ins Menü 
+        if self.current_level_index >= len(LEVELS):
+            self.state = GameState.MENU
+            return
+
+        # Reset pro Semester
+        self.mistakes = 0
+        self.active_prof = None
+        self.active_question = None
+        self.last_question_feedback = None
+
+        # neues Level laden
+        self._create_level_and_student()
+
+        # weiter spielen
+        self.state = GameState.RUNNING
 
 # ------------------------------------------------------------------------------
 # Direkter Start

@@ -5,6 +5,7 @@
 
 
 from dataclasses import dataclass
+from src.questions import questions as raw_questions_data
 
 #Spielfeld-Konfiguration 
 
@@ -33,113 +34,81 @@ class Question:
     explanation: str     #Erklärung, die nach der Antwort angezeigt wird
 
 
-#Fragen nach Professor-Typ sortiert.
-#Die type-Strings ("math", "oop", "net") benutzen wir auch in PROFESSORS
-QUESTIONS_BY_PROF: dict[str, list[Question]] = {
-    "math": [
-        Question(
-            text="Wofür steht das große O in der O-Notation?",
-            answers=[
-                "Obergrenze des Laufzeitwachstums",
-                "Optimale Laufzeit",
-                "Oszillierende Laufzeit",
-            ],
-            correct=0,
-            explanation="Big-O beschreibt die asymptotische Obergrenze des Wachstumsverhaltens.",
-        ),
-        Question(
-            text="Was ist 2^10?",
-            answers=["512", "1024", "2048"],
-            correct=1,
-            explanation="2^10 = 1024, deshalb sind so viele Größen in der Informatik Vielfache von 1024.",
-        ),
-    ],
-    "oop": [
-        Question(
-            text="Welche Aussage beschreibt Kapselung (Encapsulation) am besten?",
-            answers=[
-                "Mehrere Klassen in einer Datei speichern",
-                "Innere Details verstecken und nur ein Interface anbieten",
-                "Code in möglichst viele Funktionen aufteilen",
-            ],
-            correct=1,
-            explanation="Kapselung versteckt Implementierungsdetails hinter einer klaren Schnittstelle.",
-        ),
-        Question(
-            text="Was ist in OOP eine Klasse?",
-            answers=[
-                "Eine einzelne Variable",
-                "Ein Objekt zur Laufzeit",
-                "Eine Blaupause für Objekte",
-            ],
-            correct=2,
-            explanation="Eine Klasse ist eine Art Bauplan für Objekte (Instanzen).",
-        ),
-    ],
-    "net": [
-        Question(
-            text="Welches Protokoll wird typischerweise für Webseiten verwendet?",
-            answers=["HTTP", "FTP", "SMTP"],
-            correct=0,
-            explanation="HTTP (oder HTTPS) ist die Basis für den Austausch von Webseiten.",
-        ),
-        Question(
-            text="Was ist ein Port in der Netzwerktechnik?",
-            answers=[
-                "Ein physisches LAN-Kabel",
-                "Eine logische Endpunktnummer für Verbindungen",
-                "Die Geschwindigkeit einer Verbindung",
-            ],
-            correct=1,
-            explanation="Ein Port identifiziert einen logischen Endpunkt auf einem Rechner (z.B. 80 für HTTP).",
-        ),
-    ],
-}
+# Wir laden die Fragen dynamisch aus questions.py und wandeln sie
+# in Question-Objekte um. Die Zuordnung zum Professor erfolgt
+# automatisch anhand des Namens
+QUESTIONS_BY_PROF: dict[str, list[Question]] = {}
+
+for q_id, data in raw_questions_data.items():
+    prof_name = data["prof_name"]
+    # Wir machen aus "Prof. Projekt" einen simplen Schlüssel "projekt"
+    prof_key = prof_name.split(" ")[-1].lower().replace(".", "")
+
+    if prof_key not in QUESTIONS_BY_PROF:
+        QUESTIONS_BY_PROF[prof_key] = []
+
+    # Richtige Antwort für die Erklärung holen
+    correct_idx = data["correct"]
+    correct_text = data["answers"][correct_idx]
+
+    # Question-Objekt erstellen
+    q_obj = Question(
+        text=data["question"],
+        answers=data["answers"],
+        correct=correct_idx,
+        explanation=f"Richtig! '{correct_text}' stimmt."
+    )
+    
+    QUESTIONS_BY_PROF[prof_key].append(q_obj)
 
 
 
-# Professoren-Konfiguration (wird vom Level geladen)
-# Jeder Prof hat:
-#   - id:        nur zur Not, falls man später gezielt auswählen will
-#   - type:      Schlüssel für QUESTIONS_BY_PROF (muss passen!)
-#   - name:      Anzeige im HUD / bei Fragen
-#   - sprite:    Pfad zu deinem PNG im assets/sprites Ordner
+# ----------------------------------------------------------
+# AUTOMATISCHE PROFESSOREN-GENERIERUNG
+# ----------------------------------------------------------
+# Wir erstellen die Liste der Gegner dynamisch basierend auf den
+# geladenen Fragen. Die Sprites werden rotierend zugewiesen.
 
+    PROFESSORS = []
+    prof_id_counter = 0
+# Wir haben aktuell 3 Sprites, die wir abwechselnd nutzen 
+    available_sprites = [ "assets/sprites/prof_math.png", "assets/sprites/prof_oop.png", "assets/sprites/prof_net.png" ]
+    for prof_key, questions_list in QUESTIONS_BY_PROF.items():
+        display_name = ...
+        sprite_path = available_sprites[prof_id_counter % len(available_sprites)]
 
-PROFESSORS = [
-    {
-        "id": 0,
-        "type": "math",                            #muss zu QUESTIONS_BY_PROF["math"] passen
-        "name": "Prof. Ada (Mathe)",
-        "sprite": "assets/sprites/prof_math.png",
-        "questions": QUESTIONS_BY_PROF["math"],
-    },
-    {
-        "id": 1,
-        "type": "oop",                             #muss zu QUESTIONS_BY_PROF["oop"] passen
-        "name": "Prof. Byte (OOP)",
-        "sprite": "assets/sprites/prof_oop.png",
-        "questions": QUESTIONS_BY_PROF["oop"],
-    },
-    {
-        "id": 2,
-        "type": "net",                             #muss zu QUESTIONS_BY_PROF["net"] passen
-        "name": "Prof. Quantum (Netzwerke)",
-        "sprite": "assets/sprites/prof_net.png",
-        "questions": QUESTIONS_BY_PROF["net"],
-    },
-]
+        prof_entry = {
+            "id": prof_id_counter,
+            "type": prof_key,
+            "name": display_name,
+            "sprite": sprite_path,
+            "questions": questions_list
+        }
+
+        # Klausur special
+        if prof_key == "klausur":
+            prof_entry["sprite"] = "assets/sprites/Prüfung.png"
+            prof_entry["hp"] = 3
+
+        PROFESSORS.append(prof_entry)
+        prof_id_counter += 1
+
 
 LEVELS = [
-    # Level 1: 2 Professoren frei, 2 ECTS, 1 Pizza
-    {"ects": 2, "pizzas": 1, "prof_count": 2, "guard_mode": False},
-
-    # Level 2: 2 Professoren, einer “bewacht” ein ECTS, 2 ECTS, 2 Pizzen
-    {"ects": 2, "pizzas": 2, "prof_count": 2, "guard_mode": True},
-
-    # Level 3 (später): 3 ECTS nahe Ecken, Radius-Logik
-    {"ects": 3, "pizzas": 3, "prof_count": 3, "guard_mode": False},
-
-    # Level 4 (später): 3 ECTS, 2 nahe beieinander, mehr Pizzen
-    {"ects": 3, "pizzas": 4, "prof_count": 3, "guard_mode": False},
+    # Semester 1
+    {"ects": 2, "powerups_total": 1, "prof_count": 2, "guard_mode": False, "hard_prof": False},
+    # Semester 2
+    {"ects": 2, "powerups_total": 1, "prof_count": 2, "guard_mode": True,  "hard_prof": False},
+    # Semester 3
+    {"ects": 3, "powerups_total": 2, "prof_count": 3, "guard_mode": False, "hard_prof": True},
+    # Semester 4
+    {"ects": 3, "powerups_total": 2, "prof_count": 3, "guard_mode": True,  "hard_prof": True},
+    # Semester 5
+    {"ects": 4, "powerups_total": 3, "prof_count": 4, "guard_mode": False, "hard_prof": True},
+    # Semester 6
+    {"ects": 4, "powerups_total": 3, "prof_count": 4, "guard_mode": True,  "hard_prof": True},
+    # Semester 7
+    {"ects": 5, "powerups_total": 4, "prof_count": 5, "guard_mode": True,  "hard_prof": True},
 ]
+
+
