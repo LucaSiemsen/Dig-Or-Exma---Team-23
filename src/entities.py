@@ -171,6 +171,12 @@ class Student:
             # steht gerade, also Idle
             self.current_frames = [self.idle]
 
+        # --- BUGFIX START ---
+        # Verhindert Absturz, wenn die neue Animation weniger Bilder hat als die alte
+        if self.frame >= len(self.current_frames):
+            self.frame = 0
+        # --- BUGFIX ENDE ---
+
         # wenn nur ein Frame da ist (Idle), nicht animieren
         if len(self.current_frames) <= 1:
             self.frame = 0
