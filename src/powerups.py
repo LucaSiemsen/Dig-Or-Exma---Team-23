@@ -22,36 +22,37 @@
 #          werden (Fallback-Mechanismus), um Abstürze zu vermeiden."
 # ==============================================================================
 
+
 from __future__ import annotations
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 import pygame
-import random  # Import gehört nach oben
+import random
 
 if TYPE_CHECKING:
     from .level import Level
     from .entities import Student
 
-# Hilfsfunktion zum Laden (lokal definiert, um Abhängigkeiten gering zu halten)
-def load_scaled(path: str, size: int) -> pygame.Surface:
+# Hilfsfunktion zum sicheren Laden von Bildern
+def load_scaled(path: str, size: int) -> pygame.Surface | None:
     try:
         img = pygame.image.load(path).convert_alpha()
         return pygame.transform.scale(img, (size, size))
     except FileNotFoundError:
-        # Fallback, falls Bild fehlt: Rotes Quadrat
-        surf = pygame.Surface((size, size))
-        surf.fill((255, 0, 0))
-        return surf
+        # Gibt None zurück, damit wir wissen, dass das Bild fehlt
+        # und wir stattdessen ein farbiges Rechteck zeichnen können.
+        print(f"Asset-Warnung: {path} nicht gefunden.")
+        return None
 
 class PowerUpType(Enum):
     PIZZA = auto()    # Schutzschild
-    PARTY = auto()    # Zeit-Roulette (Gut oder Schlecht)
+    PARTY = auto()    # Zeit-Modifikation (Risiko)
     CHATGPT = auto()  # ECTS Boost
 
 class PowerUp:
     """
-    Repräsentiert ein einsammelbares Objekt im Grid.
-    Die Logik, was passiert, ist in 'apply_to' gekapselt.
+    Repräsentiert ein einsammelbares Item.
+    Kapselt Rendering (View) und Effekt-Logik (Model).
     """
     def __init__(self, grid_x: int, grid_y: int, tile_size: int, ptype: PowerUpType):
         self.grid_x = grid_x
@@ -61,33 +62,38 @@ class PowerUp:
         
         self.sprite = None
         
-        # Wir laden Grafiken nur für spezifische Typen, andere kriegen Farben
+        # Asset-Zuordnung: Hier werden die Dateinamen definiert
         if self.ptype == PowerUpType.PIZZA:
-            # WICHTIG: Dateiname ohne Leerzeichen verwenden!
             self.sprite = load_scaled("assets/sprites/pizza.png", tile_size)
+        elif self.ptype == PowerUpType.PARTY:
+            self.sprite = load_scaled("assets/sprites/party.png", tile_size)
+        elif self.ptype == PowerUpType.CHATGPT:
+            self.sprite = load_scaled("assets/sprites/chatgpt.png", tile_size)
 
     # --------------------------------------------------------
-    # Zeichnen (View)
+    # Zeichnen (View-Ebene)
     # --------------------------------------------------------
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         px = offset_x + self.grid_x * self.tile_size
         py = offset_y + self.grid_y * self.tile_size
 
-        # Fall A: Wir haben ein echtes Bild (Pizza)
-        if self.ptype == PowerUpType.PIZZA and self.sprite is not None:
+        # PRIORITÄT A: Wenn das Sprite erfolgreich geladen wurde -> Zeichnen
+        if self.sprite is not None:
             screen.blit(self.sprite, (px, py))
             return
 
-        # Fall B: Kein Bild -> Wir zeichnen ein symbolisches Rechteck
-        # (Spart Zeit bei der Asset-Erstellung für Party/ChatGPT)
+        # PRIORITÄT B: Fallback (falls Bilddatei fehlt) -> Farbiges Rechteck
+        # Das garantiert, dass das Spiel spielbar bleibt, auch ohne Assets.
         margin = self.tile_size // 6
         
         if self.ptype == PowerUpType.PARTY:
-            color = (180, 80, 200) # Lila Party
+            color = (180, 80, 200) # Lila
         elif self.ptype == PowerUpType.CHATGPT:
-            color = (80, 220, 180) # Türkis AI
+            color = (80, 220, 180) # Türkis
+        elif self.ptype == PowerUpType.PIZZA:
+            color = (255, 100, 100) # Rot
         else:
-            color = (255, 255, 0) # Fallback Gelb
+            color = (255, 255, 0) # Gelb (Unbekannt)
 
         rect = pygame.Rect(
             px + margin,
@@ -98,36 +104,33 @@ class PowerUp:
         pygame.draw.rect(screen, color, rect)
 
     # --------------------------------------------------------
-    # Wirkung (Logic)
+    # Logik anwenden (Business Logic)
     # --------------------------------------------------------
     def apply_to(self, level: "Level", student: "Student") -> str:
         """
-        Wendet den Effekt des Items an.
-        Rückgabe: Ein String für das HUD (Feedback an den Spieler).
+        Wendet den Effekt polymorph auf Level oder Student an.
+        Returns: Feedback-Text für das HUD.
         """
+        
+        # Pizza: Setzt den Status im Studenten-Objekt
         if self.ptype == PowerUpType.PIZZA:
             student.has_pizza_shield = True
-            # Info: student.pizza_shield_left müsste in entities.py ergänzt werden, 
-            # falls wir einen Timer wollen. Fürs Erste reicht das Bool-Flag.
-            return "Pizza: Ein Treffer vom Prof wird ignoriert. 🍕"
+            return "Pizza: Ein Treffer vom Prof wird ignoriert! 🍕"
 
+        # Party: Manipuliert die globale Level-Zeit
         if self.ptype == PowerUpType.PARTY:
-            # Risiko-Item: 50/50 Chance
             delta = random.choice([-10.0, +10.0])
-            
-            # Zeit anpassen (aber nicht unter 5s fallen lassen)
-            new_time = level.timer.time_left + delta
-            # Wir nehmen an, level.timer.time_left ist public
-            level.timer.time_left = max(5.0, new_time)
+            new_time = max(5.0, level.timer.time_left + delta)
+            level.timer.time_left = new_time
 
             if delta > 0:
                 return "Party gut geplant: +10s BAföG-Zeit! 🎉"
             else:
-                return "Party etwas eskaliert: -10s BAföG-Zeit… 😵"
+                return "Party eskaliert: -10s BAföG-Zeit... 😵"
 
+        # ChatGPT: Manipuliert den Score
         if self.ptype == PowerUpType.CHATGPT:
-            # Einfacher Boost
             level.collected_ects += 1
-            return "ChatGPT hilft dir bei der Klausur: +1 ECTS. 🤖"
+            return "ChatGPT hilft bei der Klausur: +1 ECTS! 🤖"
 
         return ""
