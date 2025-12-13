@@ -1,5 +1,5 @@
 # ============================================================
-# powerups.py – kleine Helferlein im Studentenleben
+# src/powerups.py – kleine Helferlein im Studentenleben
 # ------------------------------------------------------------
 # PowerUps im Spiel:
 #   - Pizza   : Ein Treffer vom Prof wird einmal ignoriert
@@ -10,103 +10,124 @@
 # Level ruft nur apply_to(level, student) auf und bekommt
 # einen kleinen Text zurück, den wir im HUD anzeigen.
 # ============================================================
+# Autor: Aaron Lehrke (937367)
+# ============================================================
+# GenAI-Kennzeichnung
+# Tool: Google Gemini
+# Verwendungszweck: Implementierung des Strategy-Patterns für Item-Effekte.
+# Prompt: "Vervollständige die von mir entworfene PowerUp-Klasse. Die Architektur 
+#          nutzt ein Enum für die Typisierung und eine zentrale 'apply_to'-Methode 
+#          (Strategy-Pattern) für die Effekte. Optimiere die draw-Methode so, 
+#          dass fehlende Sprites durch prozedurale Grafiken (Rechtecke) ersetzt 
+#          werden (Fallback-Mechanismus), um Abstürze zu vermeiden."
+# ==============================================================================
 
 from __future__ import annotations
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 import pygame
-# kleine Hilfsfunktion: Bild laden und auf Tile-Größe skalieren
-def load_scaled(path: str, size: int) -> pygame.Surface:
-        img = pygame.image.load(path).convert_alpha()
-        return pygame.transform.scale(img, (size, size))
+import random  # Import gehört nach oben
 
 if TYPE_CHECKING:
     from .level import Level
     from .entities import Student
 
-
-
+# Hilfsfunktion zum Laden (lokal definiert, um Abhängigkeiten gering zu halten)
+def load_scaled(path: str, size: int) -> pygame.Surface:
+    try:
+        img = pygame.image.load(path).convert_alpha()
+        return pygame.transform.scale(img, (size, size))
+    except FileNotFoundError:
+        # Fallback, falls Bild fehlt: Rotes Quadrat
+        surf = pygame.Surface((size, size))
+        surf.fill((255, 0, 0))
+        return surf
 
 class PowerUpType(Enum):
-    PIZZA = auto()
-    PARTY = auto()
-    CHATGPT = auto()
+    PIZZA = auto()    # Schutzschild
+    PARTY = auto()    # Zeit-Roulette (Gut oder Schlecht)
+    CHATGPT = auto()  # ECTS Boost
 
 class PowerUp:
-
+    """
+    Repräsentiert ein einsammelbares Objekt im Grid.
+    Die Logik, was passiert, ist in 'apply_to' gekapselt.
+    """
     def __init__(self, grid_x: int, grid_y: int, tile_size: int, ptype: PowerUpType):
         self.grid_x = grid_x
         self.grid_y = grid_y
         self.tile_size = tile_size
         self.ptype = ptype
-        # Sprite nur laden, wenn es Pizza ist
+        
         self.sprite = None
+        
+        # Wir laden Grafiken nur für spezifische Typen, andere kriegen Farben
         if self.ptype == PowerUpType.PIZZA:
-            self.sprite = load_scaled(
-                "assets/sprites/pizza ganz.png",
-                tile_size
-            )
+            # WICHTIG: Dateiname ohne Leerzeichen verwenden!
+            self.sprite = load_scaled("assets/sprites/pizza.png", tile_size)
+
     # --------------------------------------------------------
-    # Zeichnen
+    # Zeichnen (View)
     # --------------------------------------------------------
     def draw(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
-            px = offset_x + self.grid_x * self.tile_size
-            py = offset_y + self.grid_y * self.tile_size
+        px = offset_x + self.grid_x * self.tile_size
+        py = offset_y + self.grid_y * self.tile_size
 
-            # Wenn Pizza-PNG vorhanden → zeichnen
-            if self.ptype == PowerUpType.PIZZA and self.sprite is not None:
-                screen.blit(self.sprite, (px, py))
-                return
+        # Fall A: Wir haben ein echtes Bild (Pizza)
+        if self.ptype == PowerUpType.PIZZA and self.sprite is not None:
+            screen.blit(self.sprite, (px, py))
+            return
 
-            # Fallback: farbiges Rechteck (z.B. für spätere PowerUps)
-            margin = self.tile_size // 6
+        # Fall B: Kein Bild -> Wir zeichnen ein symbolisches Rechteck
+        # (Spart Zeit bei der Asset-Erstellung für Party/ChatGPT)
+        margin = self.tile_size // 6
+        
+        if self.ptype == PowerUpType.PARTY:
+            color = (180, 80, 200) # Lila Party
+        elif self.ptype == PowerUpType.CHATGPT:
+            color = (80, 220, 180) # Türkis AI
+        else:
+            color = (255, 255, 0) # Fallback Gelb
 
-            if self.ptype == PowerUpType.PARTY:
-                color = (180, 80, 200)
-            else:  # CHATGPT
-                color = (80, 220, 180)
-
-            rect = pygame.Rect(
-                px + margin,
-                py + margin,
-                self.tile_size - 2 * margin,
-                self.tile_size - 2 * margin,
-            )
-            pygame.draw.rect(screen, color, rect)
-
+        rect = pygame.Rect(
+            px + margin,
+            py + margin,
+            self.tile_size - 2 * margin,
+            self.tile_size - 2 * margin,
+        )
+        pygame.draw.rect(screen, color, rect)
 
     # --------------------------------------------------------
-    # Wirkung
+    # Wirkung (Logic)
     # --------------------------------------------------------
     def apply_to(self, level: "Level", student: "Student") -> str:
         """
-        Wird vom Level aufgerufen, wenn der Student auf dem Feld landet.
-        Gibt einen kurzen Text zurück, den wir im HUD anzeigen können.
+        Wendet den Effekt des Items an.
+        Rückgabe: Ein String für das HUD (Feedback an den Spieler).
         """
-
         if self.ptype == PowerUpType.PIZZA:
             student.has_pizza_shield = True
-            student.pizza_shield_left = 10.0   # z.B. 10 Sekunden
+            # Info: student.pizza_shield_left müsste in entities.py ergänzt werden, 
+            # falls wir einen Timer wollen. Fürs Erste reicht das Bool-Flag.
             return "Pizza: Ein Treffer vom Prof wird ignoriert. 🍕"
 
         if self.ptype == PowerUpType.PARTY:
-            # Party kann gut oder schlecht sein
-            import random
-
+            # Risiko-Item: 50/50 Chance
             delta = random.choice([-10.0, +10.0])
-            # Zeit clampen, damit es nicht negativ wird
-            level.timer.time_left = max(
-                5.0, min(level.timer.duration, level.timer.time_left + delta)
-            )
+            
+            # Zeit anpassen (aber nicht unter 5s fallen lassen)
+            new_time = level.timer.time_left + delta
+            # Wir nehmen an, level.timer.time_left ist public
+            level.timer.time_left = max(5.0, new_time)
+
             if delta > 0:
                 return "Party gut geplant: +10s BAföG-Zeit! 🎉"
             else:
                 return "Party etwas eskaliert: -10s BAföG-Zeit… 😵"
 
         if self.ptype == PowerUpType.CHATGPT:
+            # Einfacher Boost
             level.collected_ects += 1
-            # Level prüft selbst, ob genug ECTS erreicht wurden
             return "ChatGPT hilft dir bei der Klausur: +1 ECTS. 🤖"
 
-        # Fallback
         return ""
