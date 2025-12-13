@@ -296,7 +296,6 @@ class Game:
                 prof = self.student.move(dx, dy, self.level)
                 if prof is not None:
                     self.open_question(prof)
-                    self.sound_manager.play_hitsound()
 
             return
 
@@ -337,7 +336,6 @@ class Game:
         for prof in self.level.professors:
             if (prof.grid_x, prof.grid_y) == (self.student.grid_x, self.student.grid_y):
                 self.open_question(prof)
-                self.sound_manager.play_hitsound()
                 return
 
     # ------------------------------------------------------------------------------
@@ -358,8 +356,7 @@ class Game:
 
         self.last_question_feedback = None
         self.state = GameState.QUESTION
-
-        # Musik pausieren für Atmosphäre
+        self.sound_manager.play_hitsound()
         self.sound_manager.pause_music()
 
     # ------------------------------------------------------------------------------
@@ -398,6 +395,8 @@ class Game:
             if self.mistakes >= 2:
                 self.level.is_game_over = True
                 self.state = GameState.GAME_OVER
+                self.sound_manager.stop_hitsound()
+                self.sound_manager.unpause_music()
                 return
 
             # Zeitstrafe
