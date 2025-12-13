@@ -64,7 +64,7 @@ class PowerUp:
         
         # Asset-Zuordnung: Hier werden die Dateinamen definiert
         if self.ptype == PowerUpType.PIZZA:
-            self.sprite = load_scaled("assets/sprites/pizza ganz.png", tile_size)
+            self.sprite = load_scaled("assets/sprites/pizza.png", tile_size)
         elif self.ptype == PowerUpType.PARTY:
             self.sprite = load_scaled("assets/sprites/party.png", tile_size)
         elif self.ptype == PowerUpType.CHATGPT:
