@@ -116,7 +116,7 @@ class VolumeSlider:
         self._draw_button(screen, self.rect_minus, self.button_minus)
         self._draw_button(screen, self.rect_plus, self.button_plus)
         # Blöcke
-        vol = self.sound_manager.get_music_volume()  # 0..1
+        vol = self.sound_manager.get_music_volume() #aktuelle Lautstärke holen
         filled = int(round(vol * self.num_blocks)) #für die Anzahl der gefüllten Blöcke
 
         #jeden Block zeichnen

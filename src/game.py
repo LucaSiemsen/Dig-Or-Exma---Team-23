@@ -145,7 +145,7 @@ class Game:
 
         # Soundverwaltung
         self.sound_manager = SoundManager()
-        self.sound_manager.start_music()
+        self.sound_manager.play_song(1)
 
         # Mute-Button oben rechts
         button_size = 50
@@ -208,7 +208,8 @@ class Game:
         self.state = GameState.RUNNING
         self.last_question_feedback = None
         self.mistakes = 0
-
+        self.sound_manager.gameover_sound.stop()
+        self.sound_manager.play_song(0) 
     # ------------------------------------------------------------------------------
     # Haupt-GameLoop
     # ------------------------------------------------------------------------------
@@ -242,6 +243,8 @@ class Game:
                 # Übergang in neue States
                 if self.level.is_game_over:
                     self.state = GameState.GAME_OVER
+                    self.sound_manager.pause_music()
+                    self.sound_manager.game_over_music()    
                 elif self.level.is_won:
                     self.state = GameState.LEVEL_COMPLETE
 
@@ -293,10 +296,10 @@ class Game:
             if key == pygame.K_RIGHT: dx = 1
 
             if dx or dy:
+                self.sound_manager.play_footsteps()
                 prof = self.student.move(dx, dy, self.level)
                 if prof is not None:
                     self.open_question(prof)
-
             return
 
         # Frage beantworten
@@ -396,7 +399,8 @@ class Game:
                 self.level.is_game_over = True
                 self.state = GameState.GAME_OVER
                 self.sound_manager.stop_hitsound()
-                self.sound_manager.unpause_music()
+                self.sound_manager.pause_music()
+                self.sound_manager.game_over_music()
                 return
 
             # Zeitstrafe
