@@ -57,6 +57,7 @@ except ImportError:
 
 from src.entities import Student
 from src.level import Level
+from src.tile import TileType
 
 
 # ------------------------------------------------------------------------------
@@ -104,10 +105,12 @@ class Game:
             self.background = pygame.Surface((self.width, self.height))
             self.background.fill((20, 20, 30))
 
-        # Boden und Tunnelblöcke
+        # Boden, Tunnelblöcke sowie nun auch Blöcke für die oberste Reihe
         self.block_solid = Sprite("assets/sprites/block.png",
                                   self.tile_size, self.tile_size)
         self.block_empty = Sprite("assets/sprites/floor.png",
+                                  self.tile_size, self.tile_size)
+        self.block_grass = Sprite("assets/sprites/grass.png",
                                   self.tile_size, self.tile_size)
 
         # Soundverwaltung
@@ -435,10 +438,14 @@ class Game:
                 px = self.grid_offset_x + x * self.tile_size
                 py = self.grid_offset_y + y * self.tile_size
 
-                if tile.is_solid:
+                # --- Darunter befindet sich die Schleife ---
+                if tile.type == TileType.GRASS:
+                    self.block_grass.draw(self.screen, px, py)
+                elif tile.is_solid:
                     self.block_solid.draw(self.screen, px, py)
                 else:
                     self.block_empty.draw(self.screen, px, py)
+                # -----------------------------
 
         # ECTS-Objekte
         for ects in self.level.ects_items:
