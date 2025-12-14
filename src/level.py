@@ -23,8 +23,6 @@ from src.enemy import ProfessorEnemy
 from src.powerups import PowerUp, PowerUpType
 from src.tile import Tile, TileType
 from .timer import BafoegTimer
-
-
 from .sound import SoundManager
 # ------------------------------------------------------------
 # Config / Fallbacks:
