@@ -604,30 +604,49 @@ class Game:
     # HUD (Zeit, ECTS, Semester, Controls, Feedback)
     # ------------------------------------------------------------------------------
     def draw_hud(self):
+        assert self.level # Sicherstellen, dass Level existiert
+
+        # NEU: Dunkle Fläche hinter den HUD-Text zeichnen, um Ghosting zu verhindern
+        # Parameter: (X-Start, Y-Start, BREITE, HÖHE)
+        # Die Breite ist jetzt 450px
+        hud_bg_rect = pygame.Rect(10, 10, 500, 90) 
+        pygame.draw.rect(self.screen, (0, 0, 0), hud_bg_rect) # Schwarze Box füllt alten Text auf
+        pygame.draw.rect(self.screen, (255, 255, 255), hud_bg_rect, 1) # Optional: Weißer Rand
+
+        # --- KORRIGIERTE ZEIT-FORMATIERUNG ---
+        time_remaining = max(0.0, self.level.timer.time_left)
+        minutes = int(time_remaining // 60)
+        seconds = int(time_remaining % 60)
+        # Zehntelsekunden anzeigen (für flüssige Aktualisierung)
+        tenths = int((time_remaining * 10) % 10) 
+        time_string = f"{minutes:02d}:{seconds:02d}.{tenths:01d}"
+        # --------------------------------------
+
         # 1) Erste HUD-Zeile: Zeit + ECTS
         hud_line1 = self.font_small.render(
-            f"Zeit: {int(self.level.timer.time_left)}s   "
+            f"Zeit: {time_string}   " # <--- Jetzt mit dynamischer Anzeige
             f"ECTS: {self.level.collected_ects}/{self.level.required_ects}",
             True, (255, 255, 255)
         )
-        self.screen.blit(hud_line1, (20, 20))
+        self.screen.blit(hud_line1, (20, 20)) # Text startet bei (20, 20)
 
         # 2) Zweite HUD-Zeile: Semester (aka Level)
         hud_line2 = self.font_small.render(
             f"Semester: {self.current_level_index + 1}/7",
             True, (255, 255, 255)
         )
-        self.screen.blit(hud_line2, (20, 45))  # bisschen unter die erste Zeile
+        self.screen.blit(hud_line2, (20, 45)) # bisschen unter die erste Zeile
 
         # 3) Controls (eine Zeile tiefer)
         controls = self.font_small.render(
-            "Pfeiltasten: bewegen/graben   |   SHIFT: Pause   |   R: Neustart",
+            "Pfeiltasten: bewegen/graben  |  SHIFT: Pause  |  R: Neustart",
             True, (255, 255, 255)
         )
         self.screen.blit(controls, (20, 70))
 
         # 4) Feedback unten (z.B. nach Fragen)
         if self.last_question_feedback:
+            # ... (dieser Teil war nicht das Problem)
             msg = self.font_small.render(
                 self.last_question_feedback,
                 True, (200, 255, 200)
@@ -636,6 +655,7 @@ class Game:
 
         # 5) Buttons / UI
         self.mute_button.draw(self.screen)
+        # Die Funktion wird aus .ui importiert und hat ihren eigenen Hintergrund
         draw_buff_timer_top_right(self.screen, self.font_small, self.student)
 
     # ------------------------------------------------------------------------------

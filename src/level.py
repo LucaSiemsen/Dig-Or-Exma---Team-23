@@ -5,7 +5,6 @@
 # - ECTS (Sammelpunkte / Coins)
 # - PowerUps
 # - Professoren (Gegner)
-# - BAföG-Timer (Zeitbegrenzung)
 # ------------------------------------------------------------
 # Autor: Luca Siemsen (9393491)
 # GenAI-Kennzeichnung
@@ -23,6 +22,7 @@ from src.graphics import Sprite
 from src.enemy import ProfessorEnemy
 from src.powerups import PowerUp, PowerUpType
 from src.tile import Tile, TileType
+from .timer import BafoegTimer
 
 # ------------------------------------------------------------
 # Config / Fallbacks:
@@ -30,54 +30,17 @@ from src.tile import Tile, TileType
 # damit das Spiel nicht direkt crasht.
 # ------------------------------------------------------------
 
-try:
-    from src.config import (
-        GRID_COLS,
-        GRID_ROWS,
-        GRID_MARGIN_X_TILES,
-        GRID_MARGIN_Y_TILES,
-        BAFOEG_TIME_SECONDS,
-        REQUIRED_ECTS,
-        QUESTIONS_BY_PROF,
-        PROFESSORS,
-        LEVELS,
+
+from src.config import (
+    # ALLE KONSTANTEN, die Level braucht
+    GRID_COLS,
+    GRID_ROWS,
+    BAFOEG_TIME_SECONDS,  
+    REQUIRED_ECTS,
+    LEVELS,
+    PROFESSORS
     )
-    from .timer import BafoegTimer
 
-except ImportError:
-    # Fallback-Werte (nur für Notfall / Entwicklung)
-    GRID_COLS = 12
-    GRID_ROWS = 8
-    GRID_MARGIN_X_TILES = 2
-    GRID_MARGIN_Y_TILES = 2
-    BAFOEG_TIME_SECONDS = 120
-    REQUIRED_ECTS = 5
-    QUESTIONS_BY_PROF = {}
-    PROFESSORS = []
-    LEVELS = [{"ects": REQUIRED_ECTS, "pizzas": 1, "prof_count": len(PROFESSORS), "guard_mode": False}]
-
-    class BafoegTimer:
-        """Mini-Timer als Ersatz, falls timer.py fehlt."""
-        def __init__(self, start_time: float):
-            self.time_left = start_time
-            self.is_over = False
-
-        def update(self, dt: float):
-            if self.is_over:
-                return
-            self.time_left -= dt
-            if self.time_left <= 0:
-                self.time_left = 0
-                self.is_over = True
-
-    class Sprite:
-        """Ersatz-Sprite: zeigt einfach ein rotes Rechteck."""
-        def __init__(self, path, w, h):
-            self.surface = pygame.Surface((w, h))
-            self.surface.fill((200, 80, 80))
-
-        def draw(self, screen, x, y):
-            screen.blit(self.surface, (x, y))
 
 
 # ============================================================
