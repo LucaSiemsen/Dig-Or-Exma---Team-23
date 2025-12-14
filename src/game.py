@@ -665,6 +665,13 @@ class Game:
             )
             self.screen.blit(msg, (20, self.height - 40))
 
+        elif self.level and self.level.last_powerup_message:
+            msg = self.font_small.render(
+                self.level.last_powerup_message,
+                True, (255, 255, 100) # Gelb für Items
+            )
+            self.screen.blit(msg, (20, self.height - 40))
+
         # 5) Buttons / UI
         self.mute_button.draw(self.screen)
         # Die Funktion wird aus .ui importiert und hat ihren eigenen Hintergrund
