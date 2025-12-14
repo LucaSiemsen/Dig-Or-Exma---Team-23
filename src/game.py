@@ -402,6 +402,16 @@ class Game:
 
         for prof in self.level.professors:
             if (prof.grid_x, prof.grid_y) == (self.student.grid_x, self.student.grid_y):
+                
+                # A) Hat der Student ein Pizza-Schild?
+                if self.student.has_pizza_shield:
+                    self.student.has_pizza_shield = False  # Schild verbrauchen
+                    self.level.last_powerup_message = "Pizza-Schild hat dich gerettet! 🍕"
+                    self.level.remove_professor(prof)      # Prof entfernen, damit er nicht nochmal trifft
+                    self.sound_manager.play_hitsound()     # Optional: Sound abspielen
+                    return                                 # WICHTIG: Hier abbrechen, KEINE Frage starten!
+
+                # B) Kein Schild -> Frage starten
                 self.open_question(prof)
                 return
 
