@@ -63,9 +63,9 @@ class QuestionUI:
 
 class VolumeSlider:
     def __init__(self, x, y, width, height, sound_manager, font):
-        self.rect = pygame.Rect(x, y, width, height) #rahmen für den Slider
-        self.sound_manager = sound_manager #Soundmanager Referenz
-        self.font = font #Schriftart für Texte
+        self.rect = pygame.Rect(x, y, width, height) 
+        self.sound_manager = sound_manager
+        self.font = font 
 
         self.num_blocks = 10 #Legt fest, dass der Slider aus 10 Blöcken besteht (visuelle Segmente).
         self.gap = 4 #Abstand in Pixeln zwischen Blocks.
@@ -140,7 +140,7 @@ class VolumeSlider:
 
         return False
 
-def draw_buff_timer_top_right(screen, font, student, x=1100, y=20, size=40, gap=2):
+def draw_buff_timer_top_right(screen, font, student, x=810, y=175, size=35, gap=10):
     if student is None:
         return
 
@@ -148,7 +148,7 @@ def draw_buff_timer_top_right(screen, font, student, x=1100, y=20, size=40, gap=
         secs = int(student.pizza_shield_left)
         text = font.render(f"Schild: {secs}s", True, (255, 255, 255))
 
-        img_shield = pygame.image.load("assets/sprites/pizza ganz.png").convert_alpha()
+        img_shield = pygame.image.load("assets/sprites/pizza.png").convert_alpha()
         img_shield = pygame.transform.scale(img_shield, (size, size))
 
         screen.blit(img_shield, (x, y))
