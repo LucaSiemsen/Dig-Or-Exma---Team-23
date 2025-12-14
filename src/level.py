@@ -110,7 +110,7 @@ class Level:
     (Tiles, Coins, PowerUps, Professoren + Timer).
     """
 
-    def __init__(self, tile_size: int, sound_manager: SoundManager, level_index: int = 0):
+    def __init__(self, tile_size: int, sound_manager: SoundManager, level_index: int = 0, godmode: bool = False):
         self.level_index = level_index
         self.sound_manager = sound_manager
 
@@ -143,7 +143,7 @@ class Level:
         self.is_won = False
         self.game_over_reason = ""
         self.last_powerup_message = None
-
+        self.godmode = godmode
         # Level direkt aufbauen
         self._build_world()
 
@@ -389,7 +389,7 @@ class Level:
             return
 
         # Timer runterzählen
-        self.timer.update(dt)
+        self.timer.update(dt, self.godmode)
         if self.timer.is_over and not self.is_won:
             self.is_game_over = True
             self.game_over_reason = "BAföG-Zeit abgelaufen."

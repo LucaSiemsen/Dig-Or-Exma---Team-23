@@ -1,50 +1,90 @@
-from button import Button
+from src.button import Button
 import pygame
 
 
-button1=Button()
-button2=Button()
-buttons=[button1,button2]
-"nur zum klar machen wie ich s mir denke mir ist bewusst das ich oben button paaramenter übergeben muss."
+
+
 class MainMenu:
     #Hauptmenüklasse, beinhaltet Hintergrund, Butttons Update und Draw Logik
-    def __init__(self, screen, bild, buttons):
-        #initialisiere das menü
-        #parameter screen das pygame fenster
-        #parameter bild das geladene hintergrundbild
-        #parameter butttons liste von buttonobjekten
-        self.screen=screen  #referenz auf fenster
-        self.bild=bild      #Hintergrundbild nicht gescaled
-        self.buttons=buttons    #liste aller button im Menü
+    def __init__(self, screen, bg_scaled, bg_rect, font, titleimg):
+        self.screen=screen
         self.clock= pygame.time.Clock() #clock für fps begrenzung
-        self.bild=pygame.transform.scale(self.bild, self.screen.get_size())
-        self.auswahl=None #speichert welcher button geklickt wurde
-        self.running=True   #Menülauf-Flag
+        self.auswahl=None
+        self.running=True
+        self.bg_scaled=bg_scaled
+        self.bg_rect=bg_rect
+        self.font=font
+        self.buttons=self.create_buttons()
+
+        try:
+            title_img=pygame.image.load(
+                titleimg
+            ).convert_alpha()
+            target_width=int(self.buttons["START"].rect.width*1.6)
+            scale_factor=target_width/title_img.get_width()
+            target_heigt= int(title_img.get_height()*scale_factor)
+
+            title_img=pygame.transform.scale(
+                title_img,(target_width, target_heigt)
+            )
+
+            self.title_surface= title_img
+        except:
+            font=pygame.font.SysFont(None,72,bold=True)
+            self.title_surface=font.render("DIG OR EXMA",True,(255,255,255))
+        
+        self.title_rect=self.title_surface.get_rect()
+        self.title_rect.centerx=self.buttons["START"].rect.centerx
+        self.title_rect.bottom=self.buttons["START"].rect.top -60
+
+        self.cheat_buffer= ""
+        self.cheat_code= "ichcheate"
+        self.godmode=False
+        self.cheat_max_len= len(self.cheat_code)
+
+    def create_buttons(self):
+        bg=self.bg_rect
+        button_w=200
+        button_h=60
+        gap=90
+
+        start_x=bg.centerx-button_w//2
+        start_y=bg.centery-gap
+        
+        return{
+            "START":Button(start_x,start_y,button_h,button_w,(0,200,0),
+                           "START",self.font,(255,255,255)),
+            "QUIT":Button(start_x,start_y + gap,button_h,button_w,(200,0,0),
+                           "QUIT",self.font,(255,255,255)),
+            
+        }
+        
         
     def update(self):
-        #verarbeitet events, mausbewegung, buttonhover und klicks
-        events=pygame.event.get() #alle aktuellen events holen
-        for event in events:
-            if event.type==pygame.QUIT: #fenster schließen
+        for event in pygame.event.get():
+            if event.type==pygame.QUIT:
+                self.auswahl="QUIT"
                 self.running=False
-                self.auswahl="QUIT" #kann der gameloop auswerten
-        mausposition=pygame.mouse.get_pos() #mausposition für Hover
-        mausklick=pygame.mouse.get_pressed()    #Maustastenstatus
+            elif event.type==pygame.KEYDOWN:
+                self.handle_cheat_input(event)
+        mouse_pos=pygame.mouse.get_pos()
+        for name, button in self.buttons.items():
+            button.b_groesse_aendern(mouse_pos)
 
-        for button in self.buttons:
-            button.b_groesse_aendern(mausposition)  #Hovereffekt updaten
-
-            #Prüfen ob Button geklickt wurde
             if button.is_clicked():
-                #Aktion wird nur gespeichert
-                #Button führt nichts aus
-                self.auswahl="platzhalter für den button der dann angesprochen werden soll."
-                self.running=False #Menüschleife beenden
+                self.auswahl=name
+                self.running=False
+        
         
     def draw (self):
         #Zeichnet Huntergrund, Buttons, aktualiiert den bildschirm
         self.screen.fill((0,0,0))
-        self.screen.blit(self.bild,(0,0) )
+        self.screen.blit(self.bg_scaled,self.bg_rect)
+        self.screen.blit(self.title_surface,self.title_rect)
+
+        for button in self.buttons.values():
+            button.draw(self.screen)
+
         pygame.display.flip()
 
     def run(self):
@@ -54,67 +94,18 @@ class MainMenu:
             self.update()
             self.draw()
             self.clock.tick(60)
-        return self.auswahl
+        self.running=True
+        return {"auswahl": self.auswahl, "godmode":self.godmode}
+    
+    def handle_cheat_input(self,event):
+        if event.unicode.isprintable() and not self.godmode:
+            self.cheat_buffer += event.unicode.lower()
+            if len(self.cheat_buffer)>self.cheat_max_len:
+                self.cheat_buffer=self.cheat_buffer[-self.cheat_max_len:]
+            if self.cheat_buffer==self.cheat_code:
+                self.godmode=True
+                self.cheat_buffer=""
     
 
 
-    #----andere version hauptmenu nur nutzen wenn dem mauszeiger ein kleines spritebild folgen soll
-
-    button1=Button()
-button2=Button()
-buttons=[button1,button2]
-"nur zum klar machen wie ich s mir denke mir ist bewusst das ich oben button paaramenter übergeben muss."
-class MainMenu:
-    #Hauptmenüklasse, beinhaltet Hintergrund, Butttons Update und Draw Logik
-    def __init__(self, screen, bild, buttons):
-        #initialisiere das menü
-        #parameter screen das pygame fenster
-        #parameter bild das geladene hintergrundbild
-        #parameter butttons liste von buttonobjekten
-        self.screen=screen  #referenz auf fenster
-        self.bild=bild      #Hintergrundbild nicht gescaled
-        self.buttons=buttons    #liste aller button im Menü
-        self.clock= pygame.time.Clock() #clock für fps begrenzung
-        self.bild=pygame.transform.scale(self.bild, self.screen.get_size())
-        self.auswahl=None #speichert welcher button geklickt wurde
-        self.running=True   #Menülauf-Flag
-        
-    def update(self):
-        #verarbeitet events, mausbewegung, buttonhover und klicks
-        events=pygame.event.get() #alle aktuellen events holen
-        for event in events:
-            self.curser.stalk()
-            if event.type==pygame.QUIT: #fenster schließen
-                self.running=False
-                self.auswahl="QUIT" #kann der gameloop auswerten
-        mausposition=pygame.mouse.get_pos() #mausposition für Hover
-        mausklick=pygame.mouse.get_pressed()    #Maustastenstatus
-
-        for button in self.buttons:
-            button.b_groesse_aendern(mausposition)  #Hovereffekt updaten
-
-            #Prüfen ob Button geklickt wurde
-            if button.is_clicked():
-                #Aktion wird nur gespeichert
-                #Button führt nichts aus
-                self.auswahl="platzhalter für den button der dann angesprochen werden soll."
-                self.running=False #Menüschleife beenden
-        
-    def draw (self):
-        #Zeichnet Huntergrund, Buttons, aktualiiert den bildschirm
-        self.screen.fill((0,0,0))
-        self.screen.blit(self.bild,(0,0) )
-        self.cursor.draw((0,0))
-        pygame.display.flip()
-
-    def run(self):
-        #Hauptschleife des Menüs läuft solange wie Running=True
-        #Gibt am ende die Aktion zurück 
-        while self.running:
-            self.update()
-            self.draw()
-            self.clock.tick(60)
-        return self.auswahl
-
-
-            
+ 

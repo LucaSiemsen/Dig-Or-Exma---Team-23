@@ -5,7 +5,7 @@ hover_aenderung=5  # globale Hover-Vergrößerung (Pixelanzahl um die der Button
 
 class Button:
         #Repräsentiert einen einfachen UI-Button mit Hover- und Klickfunktion.
-    def __init__(self,x,y,hoehe_orginal,breite_orginal,buttonfarbe,schriftart,schriftfarbe):
+    def __init__(self,x,y,hoehe_orginal,breite_orginal,buttonfarbe,text,schriftart,schriftfarbe):
          
        # Initialisiert einen Button.
 
@@ -22,7 +22,8 @@ class Button:
         self.hoehe_orginal=hoehe_orginal    # Ausgangshöhe des Buttons
         self.breite_orginal=breite_orginal   # Ausgangsbreite des Buttons
 
-        self.buttonfarbe=buttonfarbe    #Button Farbe
+        self.buttonfarbe=buttonfarbe #Button Farbe
+        self.text=text   
         self.schriftart=schriftart      #Font (ungenutzt)
         self.schriftfarbe=schriftfarbe  #Textfarbe (ungenutzt)
         self.rect=pygame.Rect(x,y,self.breite_orginal,self.hoehe_orginal) 
@@ -33,6 +34,14 @@ class Button:
         #zeichnet den Button auf den Screen
         #parameter screen: das pygame-fenster
         pygame.draw.rect(screen,self.buttonfarbe,self.rect)  # zeichnet das Rechteck
+        if self.text and self.schriftart:
+            text_surface=self.schriftart.render(
+                self.text, True, self.schriftfarbe
+            )
+            text_rect= text_surface.get_rect(
+                center=self.rect.center
+            )
+            screen.blit(text_surface, text_rect)
 
 
     def b_groesse_aendern (self,mausposition):

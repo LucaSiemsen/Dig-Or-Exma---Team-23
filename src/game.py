@@ -58,7 +58,7 @@ from src.entities import Student
 from src.level import Level
 from src.tile import TileType
 from src.anim_scene_builder import Animator_Scenes
-
+from src.mainmenu import MainMenu
 
 # ------------------------------------------------------------------------------
 # GameStates – hiermit weiß das Spiel immer, was gerade passieren soll
@@ -78,6 +78,8 @@ class GameState(Enum):
 class Game:
     def __init__(self):
         pygame.init()
+
+        self.running=True
 
         # Vollbild – wir nutzen die nativen Monitorwerte
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -194,7 +196,10 @@ class Game:
         self.active_question = None
         self.last_question_feedback = None
         self.mistakes = 0   # Spieler darf 2 Fehler machen
-
+        
+        # Godmode 
+        self.godmode=False
+        
         # Level & Student erstellen
         self.current_level_index = 0
         self._create_level_and_student()
@@ -216,11 +221,12 @@ class Game:
         self.game_over_animation=Animator_Scenes(self.screen.get_width(),self.screen.get_height(),
                                                  250,1)
         self.animationslist=self.game_over_animation.load_from_spritesheet("assets\sprites\GAME OVER Scene.png",315,180,self.background)
+        self.hauptmenu=MainMenu(self.screen,self.background,self.background_rect,self.font_small,"")
     # ------------------------------------------------------------------------------
     # Neues Level erstellen + Student spawnen
     # ------------------------------------------------------------------------------
     def _create_level_and_student(self):
-        self.level = Level(self.tile_size, level_index=self.current_level_index, sound_manager=self.sound_manager)
+        self.level = Level(self.tile_size, level_index=self.current_level_index, sound_manager=self.sound_manager,godmode=self.godmode)
 
         # Startkoordinaten – momentan fest, könnte man später zufällig machen
         start_x, start_y = 1, 1
@@ -250,20 +256,19 @@ class Game:
     # Haupt-GameLoop
     # ------------------------------------------------------------------------------
     def run(self):
-        running = True
 
-        while running:
+        while self.running:
             # dt = Zeit seit letztem Frame in Sekunden
             dt = self.clock.tick(60) / 1000.0
 
             # Eingaben abfragen
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    self.running = False
 
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        running = False
+                        self.running = False
                     self.handle_key(event.key)
 
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -456,7 +461,7 @@ class Game:
             return
 
         # Richtige Antwort
-        if given_index == q.correct:
+        if given_index == q.correct or self.godmode:
             self.level.collected_ects += 1
 
             # --- NEU: Klausur/Hard-Prof braucht mehrere richtige Antworten ---
@@ -517,8 +522,15 @@ class Game:
         self.screen.blit(self.background, self.background_rect)
 
         if self.state == GameState.MENU:
-            self.draw_menu()
-
+            hauptmenu_status=self.hauptmenu.run()
+            if hauptmenu_status["auswahl"]=="START":
+                self.state=GameState.RUNNING
+            elif hauptmenu_status["auswahl"]=="QUIT":
+                self.running=False
+            if hauptmenu_status["godmode"]==True:
+                self.godmode=True
+            self.restart()
+                
         elif self.state == GameState.PAUSED:
             self.draw_game()
             self.pause_menu.draw(self.screen)

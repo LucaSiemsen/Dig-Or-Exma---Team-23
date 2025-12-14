@@ -11,8 +11,9 @@ class BafoegTimer:
         self.time_left = self.duration 
         
     #Methode, die die Zeit verringert
-    def update(self, dt: float):
-        self.time_left = max(0.0, self.time_left - dt)
+    def update(self, dt: float, godmode):
+        if godmode==False:
+            self.time_left = max(0.0, self.time_left - dt)
         #dt = vergangene Zeit seit letztem Frame.
         #0.0 ist die Zeit, die minimal verbleiben kann (Timer läuft nicht ins Negative)
 
