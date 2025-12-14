@@ -68,7 +68,7 @@ class PowerUp:
         elif self.ptype == PowerUpType.PARTY:
             self.sprite = load_scaled("assets/sprites/party.png", tile_size)
         elif self.ptype == PowerUpType.CHATGPT:
-            self.sprite = load_scaled("assets/sprites/chatgpt.png", tile_size)
+            self.sprite = load_scaled("assets/sprites/Ai Icon.png", tile_size)
 
     # --------------------------------------------------------
     # Zeichnen (View-Ebene)
