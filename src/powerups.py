@@ -115,6 +115,7 @@ class PowerUp:
         # Pizza: Setzt den Status im Studenten-Objekt
         if self.ptype == PowerUpType.PIZZA:
             student.has_pizza_shield = True
+            student.pizza_shield_left = 10.0 
             return "Pizza: Ein Treffer vom Prof wird ignoriert! 🍕"
 
         # Party: Manipuliert die globale Level-Zeit

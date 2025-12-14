@@ -24,6 +24,8 @@ from src.powerups import PowerUp, PowerUpType
 from src.tile import Tile, TileType
 from .timer import BafoegTimer
 
+
+from .sound import SoundManager
 # ------------------------------------------------------------
 # Config / Fallbacks:
 # Wenn config oder timer fehlen, laufen wir mit Standardwerten,
@@ -110,8 +112,9 @@ class Level:
     (Tiles, Coins, PowerUps, Professoren + Timer).
     """
 
-    def __init__(self, tile_size: int, level_index: int = 0):
+    def __init__(self, tile_size: int, sound_manager: SoundManager, level_index: int = 0):
         self.level_index = level_index
+        self.sound_manager = sound_manager
 
         # Grid-Größe und Tile-Größe
         self.cols = GRID_COLS
@@ -415,6 +418,8 @@ class Level:
             if ects.gx == gx and ects.gy == gy:
                 self.ects_items.remove(ects)
                 self.collected_ects += 1
+                
+                self.sound_manager.play_ects_sound()
 
         # Sieg prüfen
         if self.collected_ects >= self.required_ects and not self.is_game_over:
@@ -424,6 +429,8 @@ class Level:
         for p in list(self.powerups):
             if p.grid_x == gx and p.grid_y == gy:
                 self.powerups.remove(p)
+                
+                self.sound_manager.play_powerup_sound()
                 nachricht = p.apply_to(self, student)
                 if nachricht:
                     self.last_powerup_message = nachricht

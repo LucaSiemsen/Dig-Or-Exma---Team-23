@@ -10,9 +10,10 @@ class SoundManager:
         self.hit_sound = pg.mixer.Sound("music/hit_soundeffect.mp3")
         self.footsteps_sound = pg.mixer.Sound("music/footsteps.mp3")
         self.gameover_sound = pg.mixer.Sound("music/gameover.mp3")
-        
+        self.ECTS_sound = pg.mixer.Sound("music/ECTS_coin.mp3")
+        self.powerup_sound = pg.mixer.Sound("music/powerup.mp3")
         #Packt alle Soundeffekte in eine Liste damit man die Lautstärke zentral steuern kann (kann erweitert werden)
-        self.sfx_sounds = [self.hit_sound, self.footsteps_sound, self.gameover_sound]
+        self.sfx_sounds = [self.hit_sound, self.footsteps_sound, self.gameover_sound, self.ECTS_sound, self.powerup_sound]
         
         # Basislautstärke für Musik und Soundeffekte
         self.base_vol_music = 1.0
@@ -21,7 +22,7 @@ class SoundManager:
         self.is_paused = False
 
 
-    def play_song(self, index: int) -> None:
+    def play_song(self, index: int):
         pg.mixer.music.load(self.songs[index])
         pg.mixer.music.play(-1) # -1 bedeutet Endlosschleife
         
@@ -40,7 +41,7 @@ class SoundManager:
                 s.set_volume(self.base_vol_sfx)
 
     #Diese Methode wird vom Slider aufgerufen
-    def set_music_volume(self, vol: float) -> None:
+    def set_music_volume(self, vol: float):
         #Wir speichern den Wert immer, damit wir nach dem Unmuten wissen, wie laut es war
         self.base_vol_music = max(0.0, min(1.0, float(vol)))
         self.base_vol_sfx = self.base_vol_music 
@@ -70,6 +71,12 @@ class SoundManager:
     
     def stop_hitsound(self):
         self.hit_sound.stop()
+        
+    def play_ects_sound(self):
+        self.ECTS_sound.play()
+        
+    def play_powerup_sound(self):
+        self.powerup_sound.play()
     
-    def get_music_volume(self) -> float:
+    def get_music_volume(self):
         return self.base_vol_music

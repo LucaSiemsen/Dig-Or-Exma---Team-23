@@ -220,7 +220,7 @@ class Game:
     # Neues Level erstellen + Student spawnen
     # ------------------------------------------------------------------------------
     def _create_level_and_student(self):
-        self.level = Level(self.tile_size, level_index=self.current_level_index)
+        self.level = Level(self.tile_size, level_index=self.current_level_index, sound_manager=self.sound_manager)
 
         # Startkoordinaten – momentan fest, könnte man später zufällig machen
         start_x, start_y = 1, 1
@@ -391,6 +391,7 @@ class Game:
             elif action == "menu":
                 self.state = GameState.MENU
                 self._create_level_and_student()
+                self.sound_manager.play_song(1)
 
     # ------------------------------------------------------------------------------
     # Kollision Spieler ↔ Professor erkennen → Frage starten
@@ -502,6 +503,7 @@ class Game:
     # Rendering
     # ------------------------------------------------------------------------------
     def draw(self):
+        self.screen.fill((0, 0, 0))
         self.screen.blit(self.background, self.background_rect)
 
         if self.state == GameState.MENU:
