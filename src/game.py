@@ -633,18 +633,35 @@ class Game:
                 (120, 255, 120)
             )
 
-   # ------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------
     # HUD (Zeit, ECTS, Semester, Controls, Feedback)
     # ------------------------------------------------------------------------------
     def draw_hud(self):
         assert self.level # Sicherstellen, dass Level existiert
 
-        # NEU: Dunkle Fläche hinter den HUD-Text zeichnen, um Ghosting zu verhindern
-        # Parameter: (X-Start, Y-Start, BREITE, HÖHE)
-        # Die Breite ist jetzt 450px
-        hud_bg_rect = pygame.Rect(10, 10, 500, 90) 
-        pygame.draw.rect(self.screen, (0, 0, 0), hud_bg_rect) # Schwarze Box füllt alten Text auf
-        pygame.draw.rect(self.screen, (255, 255, 255), hud_bg_rect, 1) # Optional: Weißer Rand
+        # --- 1. TRANSPARENTE HINTERGRUND-OBERFLÄCHE ERSTELLEN ---
+        # Definieren der Maße der Box
+        box_width = 500
+        box_height = 90
+        
+        # Erstellen einer neuen Oberfläche mit Alpha-Kanal (SRCALPHA)
+        hud_bg_surface = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+        
+        # Definieren der transparenten Farbe (Dunkelgrau: 30, 30, 30, mit Alpha: 180)
+        # Alpha 180 von 255 ist ca. 70% Deckkraft
+        TRANSPARENT_BLACK = (30, 30, 30, 180) 
+        
+        # Rechteck auf die neue, transparente Oberfläche zeichnen (beginnend bei 0, 0)
+        hud_bg_rect_local = hud_bg_surface.get_rect()
+        pygame.draw.rect(hud_bg_surface, TRANSPARENT_BLACK, hud_bg_rect_local) 
+        
+        # Optional: Weißer Rand (opaker Rand, da auf der HUD-Surface)
+        pygame.draw.rect(hud_bg_surface, (255, 255, 255), hud_bg_rect_local, 1)
+
+        # 2. Die transparente Oberfläche auf den Bildschirm blitten
+        hud_start_x, hud_start_y = 10, 10
+        self.screen.blit(hud_bg_surface, (hud_start_x, hud_start_y))
+        # ---------------------------------------------------------
 
         # --- KORRIGIERTE ZEIT-FORMATIERUNG ---
         time_remaining = max(0.0, self.level.timer.time_left)
