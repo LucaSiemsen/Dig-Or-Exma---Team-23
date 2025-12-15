@@ -766,8 +766,10 @@ class Game:
 
         # wenn es kein weiteres Level gibt -> zurück ins Menü 
         if self.current_level_index >= len(LEVELS):
+            self.current_level_index = 0   # <-- Reset, damit neues Spiel wieder bei Semester 1 startet
             self.state = GameState.MENU
             return
+
 
         # Reset pro Semester
         self.mistakes = 0
