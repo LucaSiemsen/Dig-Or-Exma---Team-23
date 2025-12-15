@@ -250,6 +250,8 @@ class Game:
     # Neustartoption
     # ------------------------------------------------------------------------------
     def restart(self):
+        if self.state == GameState.MENU:
+            self.current_level_index = 0
         self._create_level_and_student()
         self.state = GameState.RUNNING
         self.game_over_animation.start()
