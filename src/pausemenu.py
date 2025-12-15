@@ -1,3 +1,6 @@
+#GEN AI Kennzeichnung: Dieser Code wurde mit Unterstützung von KI-Technologie generiert.
+#Tool: Google Gemini
+#Prompt: "Kannst du mir bei der Struktur des Pause-Menüs helfen? ich muss den Volume Slider mit einbinden wie mache ich das am besten"
 import pygame
 from .ui import VolumeSlider
 class PauseMenu:
@@ -36,15 +39,15 @@ class PauseMenu:
             return "menu" 
         return None 
 
-    #zeichnet das komplette Pause-Menü
-    def draw(self, screen: pygame.Surface) -> None:
+    #zeichnet das Pause-Menü
+    def draw(self, screen: pygame.Surface):
         screen.blit(self.overlay, (0, 0))
 
         
         center_x = self.width // 2
         center_y = self.height // 2
 
-        title_surface = self.font_title.render("PAUSE", True, (255, 255, 100))
+        title_surface = self.font_title.render("PAUSE", True, (30, 50, 240))
         screen.blit(title_surface, title_surface.get_rect(center=(center_x, center_y - 120)))
 
         self.volume_slider.draw(screen)
@@ -53,8 +56,8 @@ class PauseMenu:
         color_res = self.color_hover if self.button_resume.collidepoint(mouse_pos) else self.color_normal
         color_menu = self.color_hover if self.button_menu.collidepoint(mouse_pos) else self.color_normal
 
-        pygame.draw.rect(screen, color_res, self.button_resume, border_radius=15)
-        pygame.draw.rect(screen, color_menu, self.button_menu, border_radius=15)
+        pygame.draw.rect(screen, color_res, self.button_resume,)
+        pygame.draw.rect(screen, color_menu, self.button_menu,)
         resume_text_surface = self.font_small.render("Weiter", True, (20, 20, 20))
         menu_text_surface   = self.font_small.render("Hauptmenü", True, (20, 20, 20))
         

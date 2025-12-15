@@ -7,8 +7,7 @@ from enum import Enum, auto
 import pygame
 from .pausemenu import PauseMenu
 from .sound import SoundManager
-from .HUD import Mutebutton
-from .ui import draw_buff_timer_top_right
+from .ui import Mutebutton
 
 # ------------------------------------------------------------------------------
 # GenAI-Kennzeichnung
@@ -170,6 +169,13 @@ class Game:
         # Soundverwaltung
         self.sound_manager = SoundManager()
         self.sound_manager.play_song(1)
+        
+        # Buff-Icons vorladen Pizza-Schild
+        self.buff_icon_size = 35
+        self.buff_icon_pizza = pygame.image.load("assets/sprites/pizza.png").convert_alpha()
+        self.buff_icon_pizza = pygame.transform.scale(
+        self.buff_icon_pizza, (self.buff_icon_size, self.buff_icon_size)
+)
 
         # Mute-Button oben rechts
         button_size = 50
@@ -518,7 +524,6 @@ class Game:
     # Rendering
     # ------------------------------------------------------------------------------
     def draw(self):
-        self.screen.fill((0, 0, 0))
         self.screen.blit(self.background, self.background_rect)
 
         if self.state == GameState.MENU:
@@ -686,8 +691,31 @@ class Game:
 
         # 5) Buttons / UI
         self.mute_button.draw(self.screen)
-        # Die Funktion wird aus .ui importiert und hat ihren eigenen Hintergrund
-        draw_buff_timer_top_right(self.screen, self.font_small, self.student)
+        self.draw_buff_timer_top_right()
+
+        #Funktion für das Pizza-Schild Timer oben rechts
+    def draw_buff_timer_top_right(self):
+        if self.student is None:
+            return
+
+        if self.student.has_pizza_shield and self.student.pizza_shield_left > 0:
+            secs = int(self.student.pizza_shield_left)
+            text_surf = self.font_small.render(f"Schild: {secs}s", True, (255, 255, 255))
+
+            
+            gap = 10
+            x = self.width - 460
+            y = self.board_rect.top - 40
+            size = self.buff_icon_size 
+
+            #Icon zeichnen 
+            self.screen.blit(self.buff_icon_pizza, (x, y))
+
+            #Text daneben zeichnen
+            text_rect = text_surf.get_rect()
+            text_rect.left = x + size + gap
+            text_rect.centery = y + size // 2   
+            self.screen.blit(text_surf, text_rect)
 
     # ------------------------------------------------------------------------------
     # Frage-Overlay

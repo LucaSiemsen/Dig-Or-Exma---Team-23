@@ -1,3 +1,9 @@
+#GEN AI Kennzeichnung: Dieser Code wurde mit Unterstützung von KI-Technologie generiert.
+#Tools: OPENAI CHATGPT & Google Gemini
+#Verwendungszweck: Optimierung der Soundmanager Klasse und hilfe bei der Trennung von SFX und Hintergrundmusik
+#Prompt"Kannst du mir bei der Grundstruktur Soundmanager Klasse helfen?"
+#Prompt: "Ich wollte die sfx sounds und die hintergrundsounds jetzt doch seperat machen, um RAM zu sparen wie mache ich das ohne auf pg.mixer.Sound zuzugreifen?
+#Autor: Dimitri Homutov (935939)
 import pygame as pg
 
 class SoundManager:

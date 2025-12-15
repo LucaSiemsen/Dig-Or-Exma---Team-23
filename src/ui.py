@@ -61,6 +61,10 @@ class QuestionUI:
             surf.blit(line, line.get_rect(center=(cx, 300 + i*40)))
 
 
+#Autor: Dimitri Homutov (935939)
+#GEN AI Kennzeichnung: Dieser Code wurde mit Unterstützung von KI-Technologie generiert.
+#Tool: Google Gemini
+#Prompt "Ich möchte die Möglichkeit haben, die Musik leiser und lauter zu machen über quasi eine art audio slider. Wie mache ich das??"
 class VolumeSlider:
     def __init__(self, x, y, width, height, sound_manager, font):
         self.rect = pygame.Rect(x, y, width, height) 
@@ -83,18 +87,16 @@ class VolumeSlider:
 
         self.title_label = self.font.render(self.title, True, (220, 220, 220)) #hier sagen wir mit welchen Werten der Titel gerendert werden soll (aufgemalt)
 
-        #Button Hitboxen erstellen (für Klick-Erkennung)
-        #Minus Button (Links)
-        minus_surface = self.font.render(self.button_minus, True, self.col_text) #wir machen aus dem Text ein Surface (bild)
-        minus_rect = minus_surface.get_rect() #get rect baut mir ein Rechteck um das Surface (Bild)
-        minus_rect.midright = (self.rect.left - 15, self.rect.centery)
-        self.rect_minus = minus_rect.inflate(10, 10) #macht das Rect größer, damit es leichter anklickbar ist.
-        
-        # Plus Button (Rechts)
-        plus_surface = self.font.render(self.button_plus, True, self.col_text) #wir machen aus dem Text ein Surface (bild)
-        plus_rect = plus_surface.get_rect() #get rect baut mir ein Rechteck um das Surface (Bild)
-        plus_rect.midleft = (self.rect.right + 15, self.rect.centery)
-        self.rect_plus = plus_rect.inflate(10, 10)
+        #Button Hitboxen erstellen, Minus Button (Links)
+        button_size = 28 
+        minus_x = self.rect.left - 15 - button_size
+        minus_y = self.rect.centery - button_size // 2
+        self.rect_minus = pygame.Rect(minus_x, minus_y, button_size, button_size)
+
+        #Plus Button (Rechts)
+        plus_x = self.rect.right + 15
+        plus_y = self.rect.centery - button_size // 2
+        self.rect_plus = pygame.Rect(plus_x, plus_y, button_size, button_size)
 
         #Hier wird ausgerechnet, wie breit jeder einzelne Block in deinem Slider sein muss, damit 10 Blöcke plus die Zwischenräume in die Gesamtbreite passen.
         total_gap = (self.num_blocks - 1) * self.gap
@@ -108,9 +110,9 @@ class VolumeSlider:
 
     def draw(self, screen):
         # Titel darstellen
-        # zentrieren des Titels über dem Slider-Rechteck
-        title_rect = self.title_label.get_rect(center=(self.rect.centerx, self.rect.top - 25))
-        screen.blit(self.title_label, title_rect)
+        title_center_x = self.rect.centerx
+        title_center_y = self.rect.top - 25
+        screen.blit(self.title_label, self.title_label.get_rect(center=(title_center_x, title_center_y)))
 
         # Buttons
         self._draw_button(screen, self.rect_minus, self.button_minus)
@@ -140,18 +142,22 @@ class VolumeSlider:
 
         return False
 
-def draw_buff_timer_top_right(screen, font, student, x=810, y=175, size=35, gap=10):
-    if student is None:
-        return
+class Mutebutton:
+    def __init__(self, x, y, size, sound_manager):
+        self.rect = pygame.Rect(x, y, size, size)
+        self.sound_manager = sound_manager
 
-    if student.has_pizza_shield and student.pizza_shield_left > 0:
-        secs = int(student.pizza_shield_left)
-        text = font.render(f"Schild: {secs}s", True, (255, 255, 255))
+        img_mute = pygame.image.load("assets/sprites/mute.png").convert_alpha()
+        img_unmute = pygame.image.load("assets/sprites/unmute.png").convert_alpha()
 
-        img_shield = pygame.image.load("assets/sprites/pizza.png").convert_alpha()
-        img_shield = pygame.transform.scale(img_shield, (size, size))
+        icon_size = 32  
+        self.img_mute = pygame.transform.scale(img_mute, (icon_size, icon_size))
+        self.img_unmute = pygame.transform.scale(img_unmute, (icon_size, icon_size))
 
-        screen.blit(img_shield, (x, y))
+    def draw(self, screen):
+        img = self.img_mute if self.sound_manager.is_muted else self.img_unmute
+        screen.blit(img, (self.rect.x, self.rect.y))  
 
-        text_rect = text.get_rect(midleft=(x + size + gap, y + size // 2))
-        screen.blit(text, text_rect)
+    def handle_click(self, pos):
+        if self.rect.collidepoint(pos):
+            self.sound_manager.toggle_mute()
