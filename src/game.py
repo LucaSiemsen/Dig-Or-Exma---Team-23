@@ -353,8 +353,8 @@ class Game:
 
         # Frage beantworten
         if self.state == GameState.QUESTION:
-            if key in (pygame.K_1, pygame.K_2, pygame.K_3):
-                answer_index = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2}[key]
+            if key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4):
+                answer_index = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2, pygame.K_4: 3}[key]
                 self.resolve_question(answer_index)
             return
 
