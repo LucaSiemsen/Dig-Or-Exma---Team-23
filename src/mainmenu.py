@@ -46,7 +46,7 @@ class MainMenu:
         bg=self.bg_rect
         button_w=200
         button_h=60
-        gap=90
+        gap=65
 
         start_x=bg.centerx-button_w//2
         start_y=bg.centery-gap
