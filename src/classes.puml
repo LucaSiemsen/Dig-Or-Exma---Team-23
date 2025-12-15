@@ -1,0 +1,145 @@
+@startuml
+
+' Einstellungen für professionellen Look
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing true
+skinparam packageStyle rectangle
+
+package "src" {
+
+    class Game {
+        + width : int
+        + height : int
+        + tile_size : int
+        + state : GameState
+        + level : Level
+        + student : Student
+        + sound_manager : SoundManager
+        + active_prof : ProfessorEnemy
+        + active_question : Question
+        + mistakes : int
+        --
+        + __init__()
+        + run()
+        + handle_key(key)
+        + handle_mouse_click(pos)
+        + check_prof_collision()
+        + open_question(prof)
+        + resolve_question(given_index)
+        + draw()
+        + draw_hud()
+        + _create_level_and_student()
+    }
+
+    class Level {
+        + cols : int
+        + rows : int
+        + tile_size : int
+        + tiles : list[list[Tile]]
+        + ects_items : list[ECTS]
+        + powerups : list[PowerUp]
+        + professors : list[ProfessorEnemy]
+        + timer : BafoegTimer
+        + collected_ects : int
+        + required_ects : int
+        + is_game_over : bool
+        + last_powerup_message : str
+        --
+        + __init__(tile_size, sound_manager, level_index)
+        + _build_world()
+        + update(dt)
+        + on_player_enter_tile(gx, gy, student)
+        + get_question_for_prof(prof)
+        + remove_professor(prof)
+    }
+
+    class Entity {
+        + grid_x : int
+        + grid_y : int
+        + tile_size : int
+        + sprite : Surface
+        --
+        + draw(screen, offset_x, offset_y)
+        + update(dt)
+    }
+
+    class Student {
+        + has_pizza_shield : bool
+        + pizza_shield_left : float
+        + buffs : dict
+        --
+        + move(dx, dy, level)
+        + update_animation(dt)
+        + update_buffs(dt)
+    }
+
+    class ProfessorEnemy {
+        + questions_pool : list
+        + hp : int
+        + max_hp : int
+        + type : str
+        --
+        + update(dt, level)
+        + get_question()
+    }
+
+    class PowerUp {
+        + ptype : PowerUpType
+        + sprite : Surface
+        + grid_x : int
+        + grid_y : int
+        --
+        + __init__(gx, gy, size, ptype)
+        + draw(screen, ox, oy)
+        + apply_to(level, student) : str
+    }
+
+    enum PowerUpType {
+        PIZZA
+        PARTY
+        CHATGPT
+    }
+
+    class ECTS {
+        + gx : int
+        + gy : int
+        + frames : list
+        --
+        + draw(screen, ox, oy)
+        + _load_coin_frames()
+    }
+
+    class Config {
+        + GRID_COLS : int = 15
+        + GRID_ROWS : int = 9
+        + LEVELS : list
+        + PROFESSORS : list
+        + QUESTIONS_BY_PROF : dict
+    }
+    
+    class Question {
+        + text : str
+        + answers : list[str]
+        + correct : int
+        + explanation : str
+    }
+
+}
+
+' Beziehungen (Relationships)
+Game *-- Level : manages >
+Game *-- Student : controls >
+Game o-- Config : uses >
+
+Level *-- ECTS : contains >
+Level *-- PowerUp : contains >
+Level *-- ProfessorEnemy : contains >
+
+Entity <|-- Student : inherits
+Entity <|-- ProfessorEnemy : inherits
+
+PowerUp ..> PowerUpType : uses
+ProfessorEnemy o-- Question : has list of >
+
+@enduml
