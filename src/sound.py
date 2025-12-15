@@ -3,6 +3,7 @@
 #Verwendungszweck: Optimierung der Soundmanager Klasse und hilfe bei der Trennung von SFX und Hintergrundmusik
 #Prompt"Kannst du mir bei der Grundstruktur Soundmanager Klasse helfen?"
 #Prompt: "Ich wollte die sfx sounds und die hintergrundsounds jetzt doch seperat machen, um RAM zu sparen wie mache ich das ohne auf pg.mixer.Sound zuzugreifen?
+#Promt: "Mein hitsound wird mehrfach abgespielt nach jeder Prof Frage, wie fixe ich das am besten"
 #Autor: Dimitri Homutov (935939)
 import pygame as pg
 
@@ -18,8 +19,9 @@ class SoundManager:
         self.gameover_sound = pg.mixer.Sound("music/gameover.mp3")
         self.ECTS_sound = pg.mixer.Sound("music/ECTS_coin.mp3")
         self.powerup_sound = pg.mixer.Sound("music/powerup.mp3")
+        self.wrong_answer = pg.mixer.Sound("music/wrong.mp3")
         #Packt alle Soundeffekte in eine Liste damit man die Lautstärke zentral steuern kann (kann erweitert werden)
-        self.sfx_sounds = [self.hit_sound, self.footsteps_sound, self.gameover_sound, self.ECTS_sound, self.powerup_sound]
+        self.sfx_sounds = [self.hit_sound, self.footsteps_sound, self.gameover_sound, self.ECTS_sound, self.powerup_sound, self.wrong_answer]
         
         # Basislautstärke für Musik und Soundeffekte
         self.base_vol_music = 1.0
@@ -60,7 +62,9 @@ class SoundManager:
     
     
     def play_hitsound(self): 
-        self.hit_sound.play()
+        if self.hit_sound.get_num_channels() > 0: #prüft auf wie vielen Channeln der Sound läuft
+            return  #Sound läuft schon, also nichts tun (nicht neu starten)
+        self.hit_sound.play(-1) 
         
     def play_footsteps(self):
         self.footsteps_sound.play()
@@ -80,6 +84,9 @@ class SoundManager:
         
     def play_ects_sound(self):
         self.ECTS_sound.play()
+        
+    def wrong_answer_sound(self):
+        self.wrong_answer.play()
         
     def play_powerup_sound(self):
         self.powerup_sound.play()

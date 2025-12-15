@@ -450,6 +450,10 @@ class Game:
     # ------------------------------------------------------------------------------
     # Frage beantworten
     # ------------------------------------------------------------------------------
+    #GEN AI Kennzeichnung: Dieser Code wurde mit Unterstützung von KI-Technologie generiert.
+    #Tools: OPENAI CHATGPT & Google Gemini
+    #Verwendungszweck: Fehlersuche beim hitsound der mehrfach abgespielt wird, Code aber abgewandelt.
+    #Prompt:Mein hitsound wird mehrfach abgespielt nach jeder Prof Frage, wie fixe ich das am besten
     def resolve_question(self, given_index):
         """
         Dieser Teil war am umfangreichsten:
@@ -469,33 +473,35 @@ class Game:
         # Richtige Antwort
         if given_index == q.correct or self.godmode:
             self.level.collected_ects += 1
-
-            # --- NEU: Klausur/Hard-Prof braucht mehrere richtige Antworten ---
+            
+            #Standardannahme (für Profs)
+            is_defeated = True  
+            
             if prof is not None and hasattr(prof, "hp"):
                 prof.hp -= 1
+                if prof.hp > 0:
+                    is_defeated = False #Hat noch Leben -> NICHT besiegt
 
-                if prof.hp <= 0:
-                    self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation + " (Prof besiegt!)"
-                    self.level.remove_professor(prof)
-                else:
-                    self.last_question_feedback = (
-                        "Richtige Antwort! +1 ECTS. " + q.explanation +
-                        f" (Noch {prof.hp} richtige Antwort(en) bis besiegt.)"
-                    )
-            else:
-                # Fallback: falls prof kein hp hat
-                self.last_question_feedback = "Richtige Antwort! +1 ECTS. " + q.explanation
+            #Feedback für den Spieler
+            if is_defeated:
+                feedback = f"Richtige Antwort! +1 ECTS. {q.explanation} (Prof besiegt!)"
+                self.sound_manager.stop_hitsound()
+                self.sound_manager.unpause_music()
                 self.level.remove_professor(prof)
+            else:
+                feedback = f"Richtige Antwort! +1 ECTS. {q.explanation} (Noch {prof.hp} HP)"
+
+            self.last_question_feedback = feedback
 
 
-        # Falsche Antwort
+        # 2 Falsche Antwort
         else:
             self.mistakes += 1
-            self.last_question_feedback = (
-                f"Falsch beantwortet ({self.mistakes}/2). " + q.explanation
-            )
-
-            # Nach zwei Fehlern → Game Over
+            if self.mistakes == 1:
+                self.sound_manager.wrong_answer_sound()
+                
+            self.last_question_feedback = f"Falsch beantwortet ({self.mistakes}/2). {q.explanation}"
+            
             if self.mistakes >= 2:
                 self.level.is_game_over = True
                 self.state = GameState.GAME_OVER
@@ -503,15 +509,13 @@ class Game:
                 self.sound_manager.pause_music()
                 self.sound_manager.game_over_music()
                 return
+            
+        #Zeitstrafe
+        self.level.timer.time_left = max(5.0, self.level.timer.time_left - 10.0)
 
-            # Zeitstrafe
-            self.level.timer.time_left = max(5.0, self.level.timer.time_left - 10.0)
-
-        # Frage abschließen
+        #Frage abschließen
         self.active_prof = None
         self.active_question = None
-        self.sound_manager.stop_hitsound()
-        self.sound_manager.unpause_music()
 
         # Siegbedingung prüfen
         if self.level.collected_ects >= REQUIRED_ECTS and not self.level.is_game_over:
