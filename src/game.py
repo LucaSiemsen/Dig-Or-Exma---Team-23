@@ -504,7 +504,7 @@ class Game:
                 
             self.last_question_feedback = f"Falsch beantwortet ({self.mistakes}/2). {q.explanation}"
             
-            if self.mistakes >= 2:
+            if self.mistakes >= 3:
                 self.level.is_game_over = True
                 self.state = GameState.GAME_OVER
                 self.sound_manager.stop_hitsound()
